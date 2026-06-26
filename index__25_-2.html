@@ -1,0 +1,2848 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NEXUS — Human OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+JP:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCVk2miG5TK1ffTofXLh0hHgeSbOvmIgZ8",
+  authDomain: "kensetsu-nippo-842a2.firebaseapp.com",
+  projectId: "kensetsu-nippo-842a2",
+  storageBucket: "kensetsu-nippo-842a2.firebasestorage.app",
+  messagingSenderId: "702880974315",
+  appId: "1:702880974315:web:985321dc9180046629c5ae"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+window.__fb = { auth, db, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+  signOut, onAuthStateChanged, updateProfile, doc, setDoc, getDoc, updateDoc, serverTimestamp };
+
+/* Firebase準備完了を通知 */
+window.dispatchEvent(new Event('fb-ready'));
+function openLifeRoom(){
+  try{
+    var user=window.__fb&&window.__fb.auth?window.__fb.auth.currentUser:null;
+    if(user){
+      localStorage.setItem('lifeRoomUser',JSON.stringify({
+        uid:user.uid,
+        name:user.displayName||user.email||'プレイヤー',
+      }));
+    }
+  }catch(e){}
+  window.open('life-room.html','_blank');
+}
+
+
+</script>
+
+<style>
+:root{
+  --bg:#FFFFFF;--bg2:#F5F7FF;--bg3:#EEF1FB;
+  --sur:#FFFFFF;--sur2:#F8F9FF;--sur3:#EEF1FB;
+  --bor:rgba(99,102,241,.13);--bor2:rgba(99,102,241,.22);
+  --txt:#18181B;--txt2:#3F3F46;--txt3:#A1A1AA;
+  --logos:#D97706;--logos-l:#F59E0B;--logos-xl:rgba(217,119,6,.1);
+  --morphe:#2563EB;--morphe-l:#3B82F6;--morphe-xl:rgba(37,99,235,.1);
+  --pneuma:#059669;--pneuma-l:#10B981;--pneuma-xl:rgba(5,150,105,.1);
+  --soma:#EA580C;--soma-l:#F97316;--soma-xl:rgba(234,88,12,.1);
+  --nous:#7C3AED;--nous-l:#8B5CF6;--nous-xl:rgba(124,58,237,.1);
+  --gold:#D97706;--gold-l:#F59E0B;
+  --sh:0 2px 20px rgba(99,102,241,.08);--sh-lg:0 8px 32px rgba(99,102,241,.14);
+  --r1:8px;--r2:12px;--r3:18px;--r4:24px;--rf:9999px;
+  --fd:"Cormorant Garamond",serif;--fu:"Bebas Neue",sans-serif;--fb:"Noto Sans JP",sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#FFFFFF;color:var(--txt)}
+body{font-family:var(--fb);font-size:13px;-webkit-font-smoothing:antialiased}
+button{border:none;cursor:pointer;font-family:var(--fb);-webkit-tap-highlight-color:transparent;outline:none}
+input,textarea{font-family:var(--fb);outline:none}
+::-webkit-scrollbar{width:2px}
+::-webkit-scrollbar-thumb{background:var(--bor2);border-radius:1px}
+
+/* ──── APP SHELL ──── */
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;position:relative}
+@supports(-webkit-touch-callout:none){.app{height:-webkit-fill-available}}
+
+/* ──── SPLASH ──── */
+.splash{position:fixed;inset:0;background:linear-gradient(145deg,#1E1B4B,#312E81,#1E3A5F);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:opacity .9s}
+.splash.hide{opacity:0;pointer-events:none}
+.splash-logo{font-family:var(--fu);font-size:3.6rem;letter-spacing:.22em;
+  background:linear-gradient(135deg,#B8860B,#6B2FA0,#1D5FA8,#0A7A50);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.2rem}
+.splash-sub{font-size:.58rem;letter-spacing:.28em;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:.1rem}
+.splash-sub2{font-size:.52rem;letter-spacing:.12em;color:rgba(255,255,255,.2);margin-bottom:3rem}
+.splash-dots{display:flex;gap:.7rem}
+.sdot{width:7px;height:7px;border-radius:50%;animation:sdp 1.6s infinite}
+.sdot:nth-child(1){background:var(--logos)} .sdot:nth-child(2){background:var(--nous);animation-delay:.2s}
+.sdot:nth-child(3){background:var(--morphe);animation-delay:.4s} .sdot:nth-child(4){background:var(--pneuma);animation-delay:.6s}
+.sdot:nth-child(5){background:var(--soma);animation-delay:.8s}
+@keyframes sdp{0%,60%,100%{transform:scale(1);opacity:.5}30%{transform:scale(1.7);opacity:1}}
+
+/* ──── AUTH ──── */
+.auth-wrap{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:150;padding:1.5rem}
+.auth-logo{font-family:var(--fu);font-size:2.4rem;letter-spacing:.2em;
+  background:linear-gradient(135deg,var(--logos),var(--nous));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.15rem}
+.auth-tagline{font-size:.58rem;letter-spacing:.18em;color:var(--txt3);text-transform:uppercase;margin-bottom:2rem}
+.auth-card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r3);padding:1.4rem 1.2rem;width:100%;max-width:380px;box-shadow:var(--sh-lg)}
+.auth-tabs{display:flex;background:var(--bg2);border-radius:var(--rf);padding:3px;margin-bottom:1.2rem}
+.auth-tab{flex:1;padding:.42rem;border-radius:var(--rf);font-size:.72rem;font-weight:700;
+  color:var(--txt3);background:transparent;transition:all .2s}
+.auth-tab.on{background:var(--sur);color:var(--logos);box-shadow:var(--sh)}
+.auth-field{margin-bottom:.7rem}
+.auth-label{font-size:.58rem;font-weight:700;letter-spacing:.06em;color:var(--txt3);text-transform:uppercase;margin-bottom:.25rem}
+.auth-input{width:100%;padding:.6rem .75rem;border-radius:var(--r2);border:1.5px solid var(--bor);
+  background:var(--sur2);font-size:.78rem;color:var(--txt);transition:border .15s}
+.auth-input:focus{border-color:var(--logos)}
+.auth-btn{width:100%;padding:.78rem;border-radius:var(--rf);font-size:.82rem;font-weight:700;
+  color:#fff;margin-top:.5rem;transition:opacity .15s}
+.auth-btn:active{opacity:.8}
+.auth-err{font-size:.62rem;color:#dc2626;margin:.3rem 0;min-height:.9rem}
+
+/* ──── PAGES ──── */
+.page{display:none;flex:1;flex-direction:column;overflow:hidden}
+.page.on{display:flex}
+.sb{flex:1;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+.sb::-webkit-scrollbar{width:0}
+
+/* ──── BOTTOM NAV ──── */
+.bnav{display:flex;background:var(--sur);border-top:1px solid var(--bor);
+  padding-bottom:env(safe-area-inset-bottom);overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.bnav::-webkit-scrollbar{display:none}
+.bni{display:flex;flex-direction:column;align-items:center;padding:.4rem .2rem .28rem;
+  min-width:50px;cursor:pointer;flex-shrink:0;background:transparent;border:none;font-family:var(--fb)}
+.bni-ico{font-size:.95rem;line-height:1}
+.bni-dot{width:4px;height:4px;border-radius:50%;background:transparent;margin:.1rem auto 0}
+.bni-lbl{font-size:.44rem;color:var(--txt3);margin-top:.12rem;font-weight:500;white-space:nowrap}
+.bni.on .bni-dot{background:var(--logos)}
+.bni.on .bni-lbl{color:var(--logos);font-weight:700}
+
+/* ──── PAGE HEADER ──── */
+.pg-hd{padding:.9rem .9rem .45rem;flex-shrink:0}
+.pg-title{font-family:var(--fd);font-size:1.15rem;font-weight:600}
+.pg-sub{font-size:.63rem;color:var(--txt3);margin-top:.18rem;line-height:1.65}
+
+/* ──── MOD HEADER ──── */
+.mod-hd{display:flex;align-items:center;padding:.6rem .9rem;background:var(--sur);
+  border-bottom:1px solid var(--bor);flex-shrink:0;gap:.5rem}
+.mod-hd-ico{font-size:1.1rem}
+.mod-hd-title{font-family:var(--fd);font-size:.95rem;font-weight:600;flex:1}
+.mod-hd-back{padding:.26rem .62rem;border-radius:var(--rf);border:1px solid var(--bor);
+  background:var(--sur2);font-size:.6rem;color:var(--txt2);cursor:pointer}
+
+/* ──── TABS ──── */
+.mod-tabs{display:flex;gap:.28rem;padding:.42rem .8rem;background:var(--sur);
+  border-bottom:1px solid var(--bor);overflow-x:auto;flex-shrink:0;scrollbar-width:none}
+.mod-tabs::-webkit-scrollbar{display:none}
+.mod-tab{flex-shrink:0;padding:.3rem .65rem;border-radius:var(--rf);border:1.5px solid var(--bor);
+  background:var(--sur2);font-size:.6rem;font-weight:700;color:var(--txt2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.mod-tab.on{background:var(--logos);border-color:var(--logos);color:#fff}
+
+/* ──── CARDS ──── */
+.card{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r3);
+  margin:.45rem .85rem;box-shadow:var(--sh);overflow:hidden}
+.card-hd{padding:.72rem .88rem;border-bottom:1px solid var(--bor);display:flex;align-items:center;gap:.55rem}
+.card-ico{width:32px;height:32px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0}
+.card-hd-title{font-family:var(--fd);font-size:.88rem;font-weight:600}
+.card-hd-sub{font-size:.58rem;color:var(--txt3);margin-top:.04rem}
+.card-bd{padding:.75rem .88rem}
+
+/* ──── ACCORDION ──── */
+.acc{background:var(--sur);border:1px solid var(--bor);border-radius:var(--r2);
+  margin:.38rem .85rem;overflow:hidden}
+.acc-hd{padding:.68rem .85rem;cursor:pointer;display:flex;align-items:center;gap:.55rem}
+.acc-ico{font-size:1.2rem;flex-shrink:0}
+.acc-title{font-family:var(--fd);font-size:.85rem;font-weight:600;flex:1}
+.acc-badge{font-size:.54rem;font-weight:700;padding:.12rem .38rem;border-radius:var(--rf)}
+.acc-body{padding:0 .85rem .78rem;display:none}
+.acc.open .acc-body{display:block}
+
+/* ──── SCORE BAR ──── */
+.sbar{margin-bottom:.42rem}
+.sbar-hd{display:flex;justify-content:space-between;font-size:.58rem;margin-bottom:.2rem}
+.sbar-name{font-weight:700;color:var(--txt)}
+.sbar-val{color:var(--txt3)}
+.sbar-track{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.sbar-fill{height:100%;border-radius:3px;transition:width .8s ease}
+
+/* ──── CHIPS ──── */
+.chips{display:flex;gap:.3rem;flex-wrap:wrap;margin:.35rem 0}
+.chip{padding:.3rem .65rem;border-radius:var(--rf);border:1.5px solid var(--bor);
+  background:var(--sur2);font-size:.66rem;font-weight:600;color:var(--txt2);cursor:pointer;transition:all .12s}
+.chip.on{background:var(--logos);border-color:var(--logos);color:#fff}
+
+/* ──── CHAT ──── */
+.chat-msgs{flex:1;overflow-y:auto;padding:.65rem .8rem;display:flex;flex-direction:column;gap:.45rem;min-height:0}
+.msg{max-width:86%;display:flex;flex-direction:column}
+.msg.user{align-self:flex-end;align-items:flex-end}
+.msg.ai{align-self:flex-start;align-items:flex-start}
+.msg-bubble{padding:.52rem .72rem;border-radius:var(--r3);font-size:.72rem;line-height:1.72}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--logos),var(--nous));color:#fff;
+  border-radius:var(--r3) var(--r3) 4px var(--r3)}
+.msg.ai .msg-bubble{background:var(--sur);border:1px solid var(--bor);color:var(--txt);
+  border-radius:4px var(--r3) var(--r3) var(--r3);white-space:pre-wrap}
+.chat-foot{padding:.45rem .8rem;background:var(--sur);border-top:1px solid var(--bor);
+  display:flex;gap:.35rem;align-items:flex-end;flex-shrink:0;padding-bottom:max(.45rem,env(safe-area-inset-bottom))}
+.chat-ta{flex:1;padding:.46rem .62rem;border-radius:var(--r2);border:1.5px solid var(--bor);
+  background:var(--sur2);font-size:.73rem;color:var(--txt);resize:none;min-height:34px;max-height:88px;line-height:1.5}
+.chat-ta:focus{border-color:var(--logos)}
+.chat-send{padding:.46rem .78rem;border-radius:var(--rf);background:linear-gradient(135deg,var(--logos),var(--nous));
+  border:none;color:#fff;font-size:.68rem;font-weight:700}
+.chat-send:disabled{opacity:.4}
+.typing{display:flex;gap:.25rem;padding:.52rem .72rem;background:var(--sur);
+  border:1px solid var(--bor);border-radius:4px var(--r3) var(--r3) var(--r3)}
+.tdot{width:5px;height:5px;border-radius:50%;background:var(--txt3);animation:td .9s infinite}
+.tdot:nth-child(2){animation-delay:.15s}.tdot:nth-child(3){animation-delay:.3s}
+@keyframes td{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+/* ──── HOME ──── */
+.home-hero{text-align:center;padding:1.4rem .85rem .8rem}
+.home-hero-logo{font-family:var(--fu);font-size:3rem;letter-spacing:.2em;
+  background:linear-gradient(135deg,var(--logos),var(--nous),var(--morphe));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.home-hero-sub{font-size:.62rem;color:var(--txt3);margin-top:.25rem;letter-spacing:.08em;line-height:1.7}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;padding:0 .85rem 1rem}
+.home-mod{background:var(--sur);border:1.5px solid var(--bor);border-radius:var(--r3);
+  padding:.8rem;cursor:pointer;transition:all .15s;box-shadow:var(--sh)}
+.home-mod:hover{border-color:var(--morphe);box-shadow:0 4px 24px rgba(37,99,235,.12)}
+.home-mod:active{transform:scale(.97)}
+.home-mod-ico{font-size:1.4rem;margin-bottom:.28rem}
+.home-mod-name{font-size:.68rem;font-weight:700;color:var(--txt);margin-bottom:.1rem}
+.home-mod-desc{font-size:.56rem;color:var(--txt2);line-height:1.5}
+
+/* ──── AXIS PILLS ──── */
+.axis-pill{display:inline-flex;align-items:center;gap:.3rem;padding:.18rem .5rem;
+  border-radius:var(--rf);font-size:.56rem;font-weight:700;margin:.1rem .1rem}
+
+/* ──── UTILITY ──── */
+.tag{display:inline-block;padding:.12rem .4rem;border-radius:var(--r1);font-size:.54rem;font-weight:700}
+.sep{height:1px;background:var(--bor);margin:.6rem 0}
+.txt-sm{font-size:.65rem;color:var(--txt2);line-height:1.68}
+.txt-xs{font-size:.6rem;color:var(--txt3);line-height:1.6}
+.science-box{font-size:.64rem;color:var(--txt2);line-height:1.7;padding:.48rem .62rem;
+  background:var(--sur2);border-radius:var(--r1);margin-bottom:.4rem}
+.practice-box{font-size:.64rem;line-height:1.65;padding:.48rem .62rem;
+  border-left:3px solid var(--logos);background:var(--logos-xl);margin-bottom:.3rem}
+.research-box{font-size:.54rem;color:var(--txt3);font-style:italic;margin-top:.25rem}
+.key-box{padding:.55rem .65rem;border-radius:var(--r2);margin-top:.35rem}
+.sel-go{width:100%;padding:.75rem;border-radius:var(--rf);border:none;font-family:var(--fb);
+  font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;transition:opacity .15s;margin-top:.5rem}
+.sel-go:disabled{opacity:.4}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="splash" id="splash">
+  <div class="splash-logo">NEXUS</div>
+  <div class="splash-sub">Human Operating System</div>
+  <div class="splash-sub2">脳科学 × 人生設計 × 仕事最適化</div>
+  <div class="splash-dots">
+    <div class="sdot"></div><div class="sdot"></div><div class="sdot"></div>
+    <div class="sdot"></div><div class="sdot"></div>
+  </div>
+</div>
+
+<!-- AUTH -->
+<div class="auth-wrap" id="auth-wrap" style="display:none">
+  <div class="auth-logo">NEXUS</div>
+  <div class="auth-tagline">Human Operating System</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="atab-login" onclick="authTab('login')">ログイン</button>
+      <button class="auth-tab" id="atab-reg" onclick="authTab('reg')">新規登録</button>
+    </div>
+    <!-- ログイン -->
+    <div id="aform-login">
+      <div class="auth-field"><div class="auth-label">メールアドレス</div>
+        <input class="auth-input" id="li-email" type="email" placeholder="example@email.com"></div>
+      <div class="auth-field"><div class="auth-label">パスワード</div>
+        <input class="auth-input" id="li-pass" type="password" placeholder="パスワードを入力"></div>
+      <div class="auth-err" id="li-err"></div>
+      <button class="auth-btn" style="background:linear-gradient(135deg,var(--logos),var(--nous))" onclick="doLogin()">ログイン</button>
+    </div>
+    <!-- 登録 -->
+    <div id="aform-reg" style="display:none">
+      <div class="auth-field"><div class="auth-label">ニックネーム</div>
+        <input class="auth-input" id="reg-name" type="text" placeholder="表示名"></div>
+      <div class="auth-field"><div class="auth-label">メールアドレス</div>
+        <input class="auth-input" id="reg-email" type="email" placeholder="example@email.com"></div>
+      <div class="auth-field"><div class="auth-label">仮パスワード（6文字以上）</div>
+        <input class="auth-input" id="reg-pass" type="password" placeholder="パスワード"></div>
+      <div class="auth-field"><div class="auth-label">パスワード確認</div>
+        <input class="auth-input" id="reg-pass2" type="password" placeholder="もう一度入力"></div>
+      <div class="auth-err" id="reg-err"></div>
+      <button class="auth-btn" style="background:linear-gradient(135deg,var(--morphe),var(--nous))" onclick="doRegister()">登録してはじめる</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:none">
+
+<!-- HOME -->
+<div class="page on" id="pg-home">
+  <div class="sb">
+    <div class="home-hero">
+      <div class="home-hero-logo">NEXUS</div>
+      <div class="home-hero-sub" id="home-greeting">Human Operating System<br>脳科学×人生設計×仕事最適化</div>
+    </div>
+    <!-- 五軸スコア -->
+    <div class="card" id="home-axis-card" style="margin:.4rem .85rem .6rem">
+      <div class="card-hd">
+        <div class="card-ico" style="background:var(--logos-xl)">📊</div>
+        <div><div class="card-hd-title">今日の五軸スコア</div>
+        <div class="card-hd-sub" id="home-phase-label">あなたの現在の状態</div></div>
+      </div>
+      <div class="card-bd" id="home-axis-bars"></div>
+    </div>
+    <!-- モジュールグリッド -->
+    <div class="home-grid">
+      <div class="home-mod" onclick="nav('people')" style="grid-column:span 2;background:linear-gradient(135deg,rgba(37,99,235,.07),rgba(217,119,6,.07));border:1.5px solid var(--morphe)30">
+        <div class="home-mod-ico">👥</div>
+        <div class="home-mod-name">PEOPLE — 人生バーチャル34人</div>
+        <div class="home-mod-desc">取引先・職人・義両親・近隣・師匠・難敵… 人生全領域×脳科学×バーチャル対話</div>
+      </div>
+      <div class="home-mod" onclick="nav('sync')"><div class="home-mod-ico">🧠</div><div class="home-mod-name">SYNC</div><div class="home-mod-desc">脳間同期×生理同期×リアルタイム読解</div></div>
+      <div class="home-mod" onclick="nav('mind')"><div class="home-mod-ico">👁</div><div class="home-mod-name">MIND</div><div class="home-mod-desc">マインドリーディング×微表情×声紋</div></div>
+      <div class="home-mod" onclick="nav('negotium')"><div class="home-mod-ico">🤝</div><div class="home-mod-name">NEGOTIUM</div><div class="home-mod-desc">交渉×色彩×香水×ホルモン設計</div></div>
+      <div class="home-mod" onclick="nav('vita')"><div class="home-mod-ico">🌱</div><div class="home-mod-name">VITA</div><div class="home-mod-desc">人生フェーズ×五軸成長曲線</div></div>
+      <div class="home-mod" onclick="nav('mission')"><div class="home-mod-ico">⚡</div><div class="home-mod-name">MISSION</div><div class="home-mod-desc">今日の状況×AI戦略即生成</div></div>
+      <div class="home-mod" onclick="nav('account')"><div class="home-mod-ico">👤</div><div class="home-mod-name">ACCOUNT</div><div class="home-mod-desc">プロフィール×データ管理</div></div>
+      <div class="home-mod" onclick="nav('oracle')"
+      style="grid-column:span 2;
+        background:linear-gradient(135deg,var(--logos-xl),var(--nous-xl))">
+        <div class="home-mod-ico">🔮</div>
+        <div class="home-mod-name">ORACLE — AI相談</div>
+        <div class="home-mod-desc">Gemini 2.5 Flash × 全軸統合 × 今日の状態連携</div>
+      </div>
+    </div>
+  </div>
+</div>
+      <div class="home-mod" onclick="nav('lifezero')" style="background:linear-gradient(135deg,rgba(217,119,6,.08),rgba(37,99,235,.08));border:1px solid rgba(37,99,235,.2)"><div class="home-mod-ico">⚡</div><div class="home-mod-name" style="color:var(--logos)">LIFE ZERO</div><div class="home-mod-desc">執着ゼロで全局面を制する</div></div>
+      <div class="home-mod" onclick="nav('council')" style="background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(124,58,237,.08));border:1px solid rgba(37,99,235,.2)"><div class="home-mod-ico">👥</div><div class="home-mod-name" style="color:var(--morphe)">LIFE COUNCIL</div><div class="home-mod-desc">5体AI専門家×統合レポート</div></div>
+      <div class="home-mod" onclick="openLifeRoom()" style="background:linear-gradient(135deg,#0a0a1a,#1a0a2e);border:1.5px solid rgba(217,119,6,.4);grid-column:span 2">
+        <div class="home-mod-ico">🌏</div>
+        <div class="home-mod-name" style="color:#d97706">LIFE ROOM</div>
+        <div class="home-mod-desc" style="color:#a0a0c0">リアルタイム×複数人×人生シミュレーション</div>
+      </div>
+
+<!-- SYNC -->
+<div class="page" id="pg-sync">
+  <div class="mod-hd"><span class="mod-hd-ico">🧠</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--morphe),var(--nous));-webkit-background-clip:text;-webkit-text-fill-color:transparent">SYNC — 脳間・生理同期</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('sync','neural',this)">🧠 脳間同期</button>
+    <button class="mod-tab" onclick="switchTab('sync','physio',this)">💓 生理同期</button>
+    <button class="mod-tab" onclick="switchTab('sync','breath',this)">💨 呼吸同期</button>
+    <button class="mod-tab" onclick="switchTab('sync','ai',this)">🤖 AI診断</button>
+  </div>
+  <div class="sb">
+    <div id="sync-neural"></div>
+    <div id="sync-physio" style="display:none"></div>
+    <div id="sync-breath" style="display:none"></div>
+    <div id="sync-ai" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MIND -->
+<div class="page" id="pg-mind">
+  <div class="mod-hd"><span class="mod-hd-ico">👁</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--nous),var(--soma));-webkit-background-clip:text;-webkit-text-fill-color:transparent">MIND — マインドリーディング</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('mind','micro',this)">😶 微表情</button>
+    <button class="mod-tab" onclick="switchTab('mind','eye',this)">👀 眼球運動</button>
+    <button class="mod-tab" onclick="switchTab('mind','voice',this)">🎵 声紋分析</button>
+    <button class="mod-tab" onclick="switchTab('mind','posture',this)">🤸 姿勢・動作</button>
+    <button class="mod-tab" onclick="switchTab('mind','ai',this)">🤖 AI分析</button>
+  </div>
+  <div class="sb">
+    <div id="mind-micro"></div>
+    <div id="mind-eye" style="display:none"></div>
+    <div id="mind-voice" style="display:none"></div>
+    <div id="mind-posture" style="display:none"></div>
+    <div id="mind-ai" style="display:none"></div>
+  </div>
+</div>
+
+<!-- NEGOTIUM -->
+<div class="page" id="pg-negotium">
+  <div class="mod-hd"><span class="mod-hd-ico">🤝</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--pneuma),var(--morphe));-webkit-background-clip:text;-webkit-text-fill-color:transparent">NEGOTIUM — 交渉完全設計</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('neg','prep',this)">🎯 事前準備</button>
+    <button class="mod-tab" onclick="switchTab('neg','color',this)">🎨 色彩</button>
+    <button class="mod-tab" onclick="switchTab('neg','scent',this)">🧴 香水</button>
+    <button class="mod-tab" onclick="switchTab('neg','hormone',this)">⚗️ ホルモン</button>
+    <button class="mod-tab" onclick="switchTab('neg','ai',this)">🤖 AI戦略</button>
+  </div>
+  <div class="sb">
+    <div id="neg-prep"></div>
+    <div id="neg-color" style="display:none"></div>
+    <div id="neg-scent" style="display:none"></div>
+    <div id="neg-hormone" style="display:none"></div>
+    <div id="neg-ai" style="display:none"></div>
+  </div>
+</div>
+
+<!-- VITA -->
+<div class="page" id="pg-vita">
+  <div class="mod-hd"><span class="mod-hd-ico">🌱</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--pneuma),var(--logos));-webkit-background-clip:text;-webkit-text-fill-color:transparent">VITA — 人生フェーズ設計</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('vita','phase',this)">🌱 フェーズ</button>
+    <button class="mod-tab" onclick="switchTab('vita','axis',this)">📊 五軸診断</button>
+    <button class="mod-tab" onclick="switchTab('vita','hormone',this)">⚗️ 加齢×脳</button>
+    <button class="mod-tab" onclick="switchTab('vita','ai',this)">🤖 AI人生設計</button>
+  </div>
+  <div class="sb">
+    <div id="vita-phase"></div>
+    <div id="vita-axis" style="display:none"></div>
+    <div id="vita-hormone" style="display:none"></div>
+    <div id="vita-ai" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MISSION -->
+<div class="page" id="pg-mission">
+  <div class="mod-hd"><span class="mod-hd-ico">⚡</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--logos),var(--soma));-webkit-background-clip:text;-webkit-text-fill-color:transparent">MISSION — 今日の状況戦略</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="sb" id="mission-content"></div>
+</div>
+
+<!-- ORACLE -->
+<div class="page" id="pg-oracle">
+  <div class="mod-hd"><span class="mod-hd-ico">🔮</span>
+    <span class="mod-hd-title" style="font-family:var(--fd)">ORACLE — AI相談</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div style="display:flex;gap:.28rem;padding:.38rem .8rem;background:var(--sur2);
+    border-bottom:1px solid var(--bor);overflow-x:auto;flex-shrink:0;scrollbar-width:none" id="oracle-quick"></div>
+  <div class="chat-msgs" id="oracle-msgs"></div>
+  <div class="chat-foot">
+    <textarea class="chat-ta" id="oracle-input" rows="1" placeholder="仕事・人生・人間関係…何でも相談"></textarea>
+    <button class="chat-send" id="oracle-send" onclick="sendOracle()">送信</button>
+  </div>
+</div>
+
+<!-- ACCOUNT -->
+
+<!-- LIFE ZERO -->
+<div class="page" id="pg-lifezero">
+  <div class="mod-hd">
+    <span class="mod-hd-ico">⚡</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--logos),var(--morphe));-webkit-background-clip:text;-webkit-text-fill-color:transparent">LIFE ZERO</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button>
+  </div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('lifezero','theory',this)">⚡ 理論</button>
+    <button class="mod-tab" onclick="switchTab('lifezero','axes',this)">🎯 4軸</button>
+    <button class="mod-tab" onclick="switchTab('lifezero','protocol',this)">📋 実践</button>
+    <button class="mod-tab" onclick="switchTab('lifezero','ai',this)">🤖 AI</button>
+  </div>
+  <div class="sb">
+    <div id="lz-theory"></div>
+    <div id="lz-axes" style="display:none"></div>
+    <div id="lz-protocol" style="display:none"></div>
+    <div id="lz-ai" style="display:none">
+      <div style="padding:.6rem .85rem">
+        <div style="font-size:.65rem;color:var(--txt3);margin-bottom:.5rem">LIFE ZERO AIに相談する</div>
+        <div class="chat-msgs" id="lz-ai-msgs" style="max-height:300px"></div>
+        <div class="chat-foot" style="margin-top:.4rem">
+          <textarea class="chat-ta" id="lz-ai-inp" rows="1" placeholder="執着ゼロになれない…相談する"></textarea>
+          <button class="chat-send" onclick="sendLifeZeroAI()">送信</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- LIFE COUNCIL -->
+<div class="page" id="pg-council">
+  <div class="mod-hd">
+    <span class="mod-hd-ico">👥</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,#2563EB,#7C3AED,#D97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent">LIFE COUNCIL</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button>
+  </div>
+  <div id="council-ai-bar" style="display:flex;gap:.28rem;padding:.45rem .85rem;background:var(--sur2);border-bottom:1px solid var(--bor);overflow-x:auto;flex-shrink:0"></div>
+  <div class="chat-msgs" id="council-msgs" style="flex:1"></div>
+  <div id="council-quick-bar" style="display:flex;gap:.28rem;padding:.35rem .85rem;background:var(--sur2);border-top:1px solid var(--bor);border-bottom:1px solid var(--bor);overflow-x:auto;flex-shrink:0"></div>
+  <div class="chat-foot">
+    <textarea class="chat-ta" id="council-inp" rows="1" placeholder="5人の専門家AIに相談する...（Enterで送信）"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCouncil()}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="chat-send" id="council-send-btn" onclick="sendCouncil()">送信</button>
+  </div>
+</div>
+
+<div class="page" id="pg-account">
+  <div class="mod-hd"><span class="mod-hd-ico">👤</span>
+    <span class="mod-hd-title" style="font-family:var(--fd)">ACCOUNT</span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button></div>
+  <div class="sb" id="account-content"></div>
+</div>
+
+
+<!-- ══ PEOPLE ══ -->
+<div class="page" id="pg-people">
+  <div class="mod-hd">
+    <span class="mod-hd-ico">👥</span>
+    <span class="mod-hd-title" style="background:linear-gradient(135deg,var(--logos),var(--morphe));-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+      PEOPLE — 人生バーチャル34人
+    </span>
+    <button class="mod-hd-back" onclick="nav('home')">← HOME</button>
+  </div>
+  <div class="mod-tabs">
+    <button class="mod-tab on" onclick="switchTab('people','list',this)">👥 34人一覧</button>
+    <button class="mod-tab" onclick="switchTab('people','talk',this)">💬 バーチャル対話</button>
+    <button class="mod-tab" onclick="switchTab('people','mind',this)">👁 マインドリーディング</button>
+    <button class="mod-tab" onclick="switchTab('people','neg',this)">⚡ NEGOTIUM</button>
+  </div>
+  <div class="sb">
+    <div id="people-list"></div>
+    <div id="people-talk" style="display:none"></div>
+    <div id="people-mind" style="display:none"></div>
+    <div id="people-neg" style="display:none"></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- BOTTOM NAV -->
+<nav class="bnav" id="bnav" style="display:none">
+  <button class="bni on" onclick="nav('home')"><span class="bni-ico">🏠</span><span class="bni-dot"></span><span class="bni-lbl">HOME</span></button>
+  <button class="bni" onclick="nav('people')"><span class="bni-ico">👥</span><span class="bni-dot"></span><span class="bni-lbl">PEOPLE</span></button>
+  <button class="bni" onclick="nav('sync')"><span class="bni-ico">🧠</span><span class="bni-dot"></span><span class="bni-lbl">SYNC</span></button>
+  <button class="bni" onclick="nav('mind')"><span class="bni-ico">👁</span><span class="bni-dot"></span><span class="bni-lbl">MIND</span></button>
+  <button class="bni" onclick="nav('negotium')"><span class="bni-ico">🤝</span><span class="bni-dot"></span><span class="bni-lbl">交渉</span></button>
+  <button class="bni" onclick="nav('vita')"><span class="bni-ico">🌱</span><span class="bni-dot"></span><span class="bni-lbl">VITA</span></button>
+  <button class="bni" onclick="nav('mission')"><span class="bni-ico">⚡</span><span class="bni-dot"></span><span class="bni-lbl">MISSION</span></button>
+  <button class="bni" onclick="nav('oracle')"><span class="bni-ico">🔮</span><span class="bni-dot"></span><span class="bni-lbl">ORACLE</span></button>
+  <button class="bni" onclick="nav('account')"><span class="bni-ico">👤</span><span class="bni-dot"></span><span class="bni-lbl">ME</span></button>
+  <button class="bni" onclick="nav('lifezero')"><span class="bni-ico">⚡</span><span class="bni-dot" style="background:var(--logos)"></span><span class="bni-lbl" style="color:var(--logos)">ZERO</span></button>
+  <button class="bni" onclick="nav('council')"><span class="bni-ico">👥</span><span class="bni-dot" style="background:var(--morphe)"></span><span class="bni-lbl" style="color:var(--morphe)">COUNCIL</span></button>
+  <button class="bni" onclick="openLifeRoom()" style="position:relative"><span class="bni-ico">🌏</span><span class="bni-dot" style="background:var(--logos)"></span><span class="bni-lbl" style="color:var(--logos)">ROOM</span></button>
+</nav>
+
+<script>
+/* ════ LIFE ZERO ════ */
+const LIFE_ZERO_DATA={
+  title:'LIFE ZERO',
+  subtitle:'執着ゼロで全局面を制する',
+  core:'恋愛のZERO理論を人生全局面に拡張する。コルチゾールゼロ×テストステロン最大値×アウトカム依存ゼロが、仕事・交渉・家族・友人の全局面で「最強の自分」を作る物理的条件である。',
+  axes:[
+    {title:'仕事×LIFE ZERO',emoji:'💼',color:'#2563EB',
+     desc:'結果への執着が判断を歪める。KPIゼロ意識×プロセス没入で最高のアウトプットが出る。',
+     science:'Deci & Ryan自己決定理論：内発的動機（楽しむ）は外発的動機（成果）より長期パフォーマンスが高い。'},
+    {title:'交渉×LIFE ZERO',emoji:'🤝',color:'#D97706',
+     desc:'「勝ちたい」という執着が非言語シグナルを劣化させる。ZERO状態の交渉者は相手が自然に妥協する。',
+     science:'van der Meij 2010：勝利への執着がコルチゾール急上昇→交渉力低下。'},
+    {title:'人間関係×LIFE ZERO',emoji:'👥',color:'#059669',
+     desc:'「好かれたい」「嫌われたくない」の執着が空気を重くする。ZERO状態で全員と接すると自然に好かれる。',
+     science:'∞LIFE理論：全ての人と「関係未満を楽しむ」習慣が社会的自信を構造的に形成する。'},
+    {title:'成長×LIFE ZERO',emoji:'🌱',color:'#7C3AED',
+     desc:'「成長しなければ」という執着が学習を阻害する。好奇心だけで動く状態が神経可塑性を最大化する。',
+     science:'成長マインドセット（Dweck 2006）：努力そのものを楽しむ姿勢が長期的な成長を決定する。'},
+  ],
+  protocol:[
+    {step:1,title:'毎朝のLIFE ZEROセッション',action:'「今日は全ての結果を手放す。プロセスだけを楽しむ」を3回唱える。4-7-8呼吸で実装する。',time:'朝5分'},
+    {step:2,title:'If-Then設定（人生版）',action:'会議前：「批判されたら→深呼吸して感謝する」。交渉前：「沈黙が来たら→3秒待つ」。',time:'前日2分'},
+    {step:3,title:'夜のZEROスコア記録',action:'今日の各局面でどれだけ執着ゼロでいられたか。1〜10点で記録。',time:'夜3分'},
+  ]
+};
+
+/* ════ LIFE COUNCIL AI定義 ════ */
+const LIFE_COUNCIL_AIS={
+  director:{
+    id:'director',name:'LIFE DIRECTOR',emoji:'🎬',color:'#2563EB',
+    desc:'人生プロジェクト全体を演出する総合プロデューサー',
+    system:'あなたは世界最高峰の人生エグゼクティブプロデューサーAIです。ユーザーの人生を「プロジェクト」として管理し、現在地診断→週次ミッション発行→進捗追跡を行う。五軸（LOGOS/MORPHE/PNEUMA/SOMA/NOUS）を統合して回答。必ず①現状診断②今週の3ミッション③注意点1つの構造で回答。200〜300字。',
+    quick:['今の状況を診断して','今週のミッションを出して','最優先で改善すべきことは？','人生フェーズ別の戦略は？','今日すぐできることは？']
+  },
+  business:{
+    id:'business',name:'BUSINESS MASTER',emoji:'💼',color:'#D97706',
+    desc:'交渉×プレゼン×職場人間関係の世界最高峰AI',
+    system:'あなたは世界最高峰のビジネスコンサルタントAIです。専門：交渉術（BATNA・アンカリング）・プレゼン力・上司/部下/クライアント対策・職場の人間関係設計・LIFE ZERO交渉理論。必ず科学的根拠と具体的アクションを含める。200〜300字。',
+    quick:['交渉前の準備を教えて','プレゼンで説得する方法は？','クレーム対応の正解は？','上司を動かす方法は？','今日の商談の戦略は？']
+  },
+  inner:{
+    id:'inner',name:'INNER MASTER',emoji:'🏔',color:'#059669',
+    desc:'インナーマッスル×呼吸法×脳状態設計の世界最高峰AI',
+    system:'あなたは世界最高峰のインナーマッスル×呼吸法トレーナーAIです。専門：横隔膜・迷走神経・4-7-8呼吸・SOMA（身体）設計・コルチゾールゼロ状態の物理的作り方。全ての回答をLIFE ZERO状態の実現に結びつける。150〜250字。',
+    quick:['今すぐできる呼吸法は？','緊張を消す方法は？','声を低く安定させるには？','会議前のルーティンは？','集中力を上げる呼吸は？']
+  },
+  psyche:{
+    id:'psyche',name:'PSYCHE MASTER',emoji:'🧠',color:'#7C3AED',
+    desc:'進化心理学×認知科学×行動経済学の世界最高峰AI',
+    system:'あなたは世界最高峰の進化心理学×認知科学×行動経済学AIです。専門：認知バイアス・損失回避・社会的証明・ハンディキャップ原理・確証バイアスの逆転・メイトコピー効果・If-Then実行意図（Gollwitzer 1999）。全ての回答に進化的根拠と実践戦略を含める。150〜250字。',
+    quick:['なぜその人はそう動いたか？','認知バイアスを使うには？','相手の本音を読む方法は？','人間の行動原理を教えて','この状況の心理学的分析は？']
+  },
+  growth:{
+    id:'growth',name:'GROWTH MASTER',emoji:'🌱',color:'#EA580C',
+    desc:'自己成長×習慣設計×神経可塑性の世界最高峰AI',
+    system:'あなたは世界最高峰の自己成長×習慣設計AIです。専門：神経可塑性（Doidge 2007）・習慣の科学（Clear 2018）・成長マインドセット（Dweck 2006）・If-Then実行意図・朝のルーティン設計・長期成長戦略。全ての回答がLIFE ZERO理論と連動する方向で。150〜250字。',
+    quick:['習慣を身につける方法は？','成長を加速させるには？','神経可塑性を活かすには？','朝のルーティンを教えて','今の課題を突破する方法は？']
+  }
+};
+
+var councilHistory=[];
+var councilSending=false;
+var councilSelAI=null;
+
+
+
+'use strict';
+
+/* ══ 定数 ══ */
+const FUNCTIONS_BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ? 'http://localhost:5001/kensetsu-nippo-842a2/us-central1'
+  : 'https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net';
+const GEMINI_URL = FUNCTIONS_BASE + '/askAI';
+const ACCESS_KEY = 'HeartsHouse2026Key';
+
+/* ══ localStorage ══ */
+const LS={
+  get(k){try{return JSON.parse(localStorage.getItem('nx_'+k))}catch{return null}},
+  set(k,v){try{localStorage.setItem('nx_'+k,JSON.stringify(v))}catch{}}
+};
+
+/* ══ window.storage キャッシュ層 ══ */
+const WS={
+  async get(k){try{const r=await window.storage.get('nx_'+k);return r?JSON.parse(r.value):null}catch{return LS.get(k)}},
+  async set(k,v){try{await window.storage.set('nx_'+k,JSON.stringify(v))}catch{}; LS.set(k,v)},
+  async delete(k){try{await window.storage.delete('nx_'+k)}catch{}; try{localStorage.removeItem('nx_'+k)}catch{}}
+};
+
+/* ══ Gemini 2.5 Flash ══ */
+function extractGeminiText(raw){
+  if(!raw)return'';
+  const d=raw.data?raw.data:raw;
+  return d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+}
+async function callGemini(system,user,maxTokens=1400){
+  try{
+    const r=await fetch(GEMINI_URL,{method:'POST',
+      headers:{'Content-Type':'application/json','X-Access-Key':ACCESS_KEY},
+      body:JSON.stringify({model:'gemini-2.5-flash',messages:[{role:'user',content:user}],
+        prompt:system+'\n\n'+user,max_tokens:maxTokens})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const raw=await r.json();
+    return extractGeminiText(raw)||'エラーが発生しました';
+  }catch(e){return 'エラー: '+e.message}
+}
+
+/* ══ 月相計算 ══ */
+const KNM=new Date('2024-01-11T11:57:00Z'),LC=29.53058867;
+function moonPhase(d=new Date()){
+  const p=(((d-KNM)/86400000)%LC+LC)%LC;
+  if(p<1.85)return{e:'🌑',l:'新月',p};if(p<7.38)return{e:'🌒',l:'三日月',p};
+  if(p<14.77)return{e:'🌓',l:'上弦',p};if(p<16.61)return{e:'🌕',l:'満月',p};
+  return{e:'🌗',l:'下弦',p};
+}
+
+/* ══ 五軸データ ══ */
+const FIVE_AXES=[
+  {id:'logos',name:'LOGOS',emoji:'🟡',label:'知性・洞察',color:'var(--logos)',desc:'意思決定・論理・直感・学習'},
+  {id:'morphe',name:'MORPHE',emoji:'🔵',label:'環境・設計',color:'var(--morphe)',desc:'空間・外見・視覚環境の最適化'},
+  {id:'pneuma',name:'PNEUMA',emoji:'🟢',label:'対話・伝達',color:'var(--pneuma)',desc:'コミュニケーション・声・人間関係'},
+  {id:'soma',name:'SOMA',emoji:'🟠',label:'身体・状態',color:'var(--soma)',desc:'睡眠・運動・栄養・エネルギー管理'},
+  {id:'nous',name:'NOUS',emoji:'🟣',label:'統合・創造',color:'var(--nous)',desc:'創造性・マインドセット・メタ認知'},
+];
+
+/* ══ ナビゲーション ══ */
+const PAGES=['home','people','sync','mind','negotium','vita','mission','oracle','account','lifezero','council'];
+let currentPage='home';
+
+function nav(p){
+  PAGES.forEach(pg=>{
+    const el=document.getElementById('pg-'+pg);
+    if(el)el.classList.remove('on');
+  });
+  const el=document.getElementById('pg-'+p);
+  if(el)el.classList.add('on');
+  document.querySelectorAll('.bni').forEach(b=>b.classList.remove('on'));
+  const bni=document.querySelector(`.bni[onclick="nav('${p}')"]`);
+  if(bni)bni.classList.add('on');
+  currentPage=p;
+  // 遅延初期化
+  if(p==='people')initPeople();
+  if(p==='sync')initSync();
+  if(p==='mind')initMind();
+  if(p==='negotium')initNeg();
+  if(p==='vita')initVita();
+  if(p==='mission')initMission();
+  if(p==='oracle')initOracle();
+  if(p==='account')initAccount();
+  if(p==='lifezero')initLifeZero();
+  if(p==='council')initCouncil();
+}
+
+function switchTab(prefix,tab,btn){
+  const pgId = prefix==='neg'?'negotium':prefix==='vita'?'vita':prefix==='people'?'people':prefix;
+  document.querySelectorAll(`#pg-${pgId} [id^="${prefix}-"]`).forEach(el=>{
+    el.style.display='none';
+  });
+  // 全子要素を非表示
+  const page=document.getElementById('pg-'+pgId);
+  if(page){
+    page.querySelectorAll('.mod-tab').forEach(b=>b.classList.remove('on'));
+    // タブコンテンツを切り替え
+    const allDivs=page.querySelector('.sb')||page;
+    Array.from(allDivs.children||[]).forEach(c=>{
+      if(c.id&&c.id.startsWith(prefix+'-'))c.style.display='none';
+    });
+  }
+  const target=document.getElementById(prefix+'-'+tab);
+  if(target)target.style.display='block';
+  if(btn)btn.classList.add('on');
+  // 遅延レンダリング
+  const fn={'sync-neural':renderSyncNeural,'sync-physio':renderSyncPhysio,
+    'sync-breath':renderSyncBreath,'sync-ai':renderSyncAI,
+    'mind-micro':renderMindMicro,'mind-eye':renderMindEye,
+    'mind-voice':renderMindVoice,'mind-posture':renderMindPosture,'mind-ai':renderMindAI,
+    'neg-prep':renderNegPrep,'neg-color':renderNegColor,'neg-scent':renderNegScent,
+    'neg-hormone':renderNegHormone,'neg-ai':renderNegAI,
+    'vita-phase':renderVitaPhase,'vita-axis':renderVitaAxis,
+    'vita-hormone':renderVitaHormone,'vita-ai':renderVitaAI,
+    'people-list':renderPeopleList,'people-talk':renderPeopleTalk,
+    'people-mind':renderPeopleMind,'people-neg':renderPeopleNeg
+  };
+  const key=prefix+'-'+tab;
+  if(fn[key]){const t=document.getElementById(key);if(t&&!t._init)fn[key]();}
+}
+
+/* ══ AUTH ══ */
+async function doLogin(){
+  const email=document.getElementById('li-email').value.trim();
+  const pass=document.getElementById('li-pass').value;
+  const err=document.getElementById('li-err');
+  err.textContent='';
+  if(!email||!pass){err.textContent='メールとパスワードを入力してください';return}
+  try{
+    const {auth,signInWithEmailAndPassword}=window.__fb;
+    await signInWithEmailAndPassword(auth,email,pass);
+  }catch(e){err.textContent='メールアドレスまたはパスワードが違います'}
+}
+async function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const pass=document.getElementById('reg-pass').value;
+  const pass2=document.getElementById('reg-pass2').value;
+  const err=document.getElementById('reg-err');
+  err.textContent='';
+  if(!name||!email||!pass){err.textContent='全項目を入力してください';return}
+  if(pass.length<6){err.textContent='パスワードは6文字以上にしてください';return}
+  if(pass!==pass2){err.textContent='パスワードが一致しません';return}
+  try{
+    const {auth,db,createUserWithEmailAndPassword,updateProfile,doc,setDoc,serverTimestamp}=window.__fb;
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:name});
+    await setDoc(doc(db,'users',cred.user.uid),{name,email,createdAt:serverTimestamp(),phase:2});
+  }catch(e){document.getElementById('reg-err').textContent='登録に失敗しました: '+e.message}
+}
+async function doLogout(){
+  await window.__fb.signOut(window.__fb.auth);
+}
+function authTab(t){
+  document.getElementById('aform-login').style.display=t==='login'?'block':'none';
+  document.getElementById('aform-reg').style.display=t==='reg'?'block':'none';
+  document.getElementById('atab-login').classList.toggle('on',t==='login');
+  document.getElementById('atab-reg').classList.toggle('on',t==='reg');
+}
+
+/* ══ HOME ══ */
+function initHome(user){
+  const moon=moonPhase();
+  const greeting=`${moon.e} ${moon.l} — ${user?.displayName||''}さんのHuman OS`;
+  document.getElementById('home-greeting').textContent=greeting;
+  // 五軸スコア（window.storageから復元またはデフォルト）
+  renderHomeAxis();
+}
+async function renderHomeAxis(){
+  let scores=await WS.get('axis_scores')||{logos:72,morphe:65,pneuma:80,soma:58,nous:68};
+  const el=document.getElementById('home-axis-bars');
+  if(!el)return;
+  el.innerHTML=FIVE_AXES.map(a=>`
+    <div class="sbar">
+      <div class="sbar-hd"><span class="sbar-name">${a.emoji} ${a.name} — ${a.label}</span><span class="sbar-val">${scores[a.id]||0}</span></div>
+      <div class="sbar-track"><div class="sbar-fill" style="width:${scores[a.id]||0}%;background:${a.color}"></div></div>
+    </div>`).join('');
+}
+
+/* ══ SYNC データ ══ */
+const SYNC_NEURAL=[
+  {title:'脳間同期（Inter-Brain Synchrony）',emoji:'🧠',color:'var(--morphe)',
+   science:'Hasson et al.（Princeton 2010）：話し手と聴き手の脳が同じパターンで活性化する「ニューラルカップリング」現象。fMRIで証明。同期が高いほど理解・共感・記憶定着が強まる。',
+   practice:['ストーリーを語る→相手の脳が同じ物語体験を再現','感情的な体験談→扁桃体の同期が強まり感情共鳴','具体的数字・場面描写→視覚皮質が同期し「見えてくる」感覚'],
+   key:'抽象論より体験談・数字より場面描写・説明より物語が脳間同期を最大化する'},
+  {title:'ミラーニューロンと共感同期',emoji:'🪞',color:'var(--nous)',
+   science:'Rizzolatti（1992）：他者の行動を見るだけで自分が同じ行動をするのと同じニューロンが発火。「心の理論」の神経基盤。共感・模倣・感情感染の源泉。',
+   practice:['相手の動きを3秒遅れで自然に真似る→「わかってもらえる」感覚','感情表現を顔で反映→相手の扁桃体が「仲間」と認識','手を見せて話す→ミラーニューロンの追跡範囲を最大化'],
+   key:'ミラーリングは「意図的に似せる」ではなく「本当に共感している状態」が最強'},
+  {title:'アイコンタクト×前頭前皮質同期',emoji:'👁',color:'var(--pneuma)',
+   science:'Hirsch et al.（2017）fNIRS研究：対面アイコンタクトで前頭前皮質が双方向に同期。4〜6秒の適切なアイコンタクトがオキシトシン放出を促進。ビジネス信頼構築の神経基盤。',
+   practice:['4〜6秒見て→1〜2秒自然に外す→戻す（サイクルを作る）','重要な話をされている時は目を細めて頷く','右目を主に見る→左脳（言語・論理・信頼）に直結'],
+   key:'アイコンタクトは「じっと見続ける」より「リズム」が信頼を作る'},
+  {title:'感情伝染（Emotional Contagion）',emoji:'⚡',color:'var(--logos)',
+   science:'Hatfield et al.（1993）：人は他者の感情を顔・声・姿勢から無意識に模倣し、同じ感情状態に引き込まれる。リーダーの感情がチーム全体に伝播する神経科学的根拠。',
+   practice:['自分の感情状態を先に整える（コルチゾール低下）→チームに波及','落ち着いた低い声で話す→会議室全体の副交感神経を優位化','ポジティブな期待を言語化する→ドーパミン感染が起きる'],
+   key:'感情伝染のリーダーシップ：自分が最高の状態でいることがチームへの最大の投資'},
+];
+
+const SYNC_PHYSIO=[
+  {title:'心拍同期（Cardiac Synchrony）',emoji:'💓',color:'var(--soma)',
+   science:'Dezecache et al.（2017）：会話中に話し手と聴き手の心拍が同期。感情的な内容で同期が強まる。心拍同期＝感情的共鳴の生理的指標。交渉・プレゼン・面接で活用できる。',
+   signals:['頸部の脈が見えてきた→心拍上昇中（関与増加）','顔が紅潮→交感神経活性化（感情的）','瞳孔が広がる→興奮・関心の高まり','視線が増えてきた→引き付けられている'],
+   action:'感情レベルを上げた話題→自分の心拍を上げる→相手の心拍も連動'},
+  {title:'瞳孔同期（Pupil Synchrony）',emoji:'🔍',color:'var(--morphe)',
+   science:'Kret & Sjak-Shie（2019）：対話中に瞳孔の大きさが同期する現象を発見。瞳孔拡大＝興味・覚醒・感情活性化の指標。照明変化に注意（暗い場所は常に拡大する）。',
+   signals:['瞳孔拡大+視線増加→あなたへの強い関心','瞳孔収縮+視線逸れ→関心低下または警戒','瞳孔拡大+視線逸れ→感情的だが表現を抑えている'],
+   action:'相手の瞳孔を観察：照明補正して関心度を読む'},
+  {title:'皮膚電気反応（EDA）同期',emoji:'⚡',color:'var(--logos)',
+   science:'Nummenmaa et al.（2012）：感情体験が特定の身体部位に対応する「感情地図」を発見。皮膚電気反応（汗腺の活動）は感情の客観的指標。話し手と聴き手のEDAが同期することが実証されている。',
+   signals:['手のひらが少し湿っている（握手時）→感情活性化の証拠','首・こめかみの発汗→コルチゾール上昇またはドーパミン上昇','手のひらを隠す・擦る→不安・防衛状態','手を開いて見せる→開放・信頼のシグナル'],
+   action:'握手・名刺交換時に手のひらの温度と湿度を感じ取る。発汗＝感情が動いている証拠。その感情が何かを他のシグナルと組み合わせて読む'},
+  {title:'姿勢同期（Postural Synchrony）',emoji:'🤸',color:'var(--pneuma)',
+   science:'Chartrand & Bargh（1999）カメレオン効果：無意識の姿勢模倣が好感度を上昇させる。意識的模倣より自然な模倣が効果的。同期している人ほど交渉成功率が高い。',
+   signals:['相手が自分の動作を真似始めた→脳間同期が成功している','相手の姿勢が開いてきた→心理的距離が縮んでいる','相手が前傾みになった→関与度・興味の上昇','荷物を緩める→警戒解除'],
+   action:'3秒遅れで相手の姿勢を真似る。権威を示す場面では「引く」ことで差別化'},
+];
+
+const SYNC_BREATH=[
+  {title:'呼吸同期による生理的接続',emoji:'💨',
+   science:'Feldman（2011）：母子間の呼吸・心拍の同期が愛着形成の神経基盤。成人でも会話中に無意識の呼吸同期が起きる。意識的に合わせると親密度・信頼度が急上昇。',
+   steps:[
+     {n:1,title:'相手の呼吸を観察する',desc:'腹部・胸部の動きを横目で捉える。肩の上下でも判断できる。会話中1〜2分観察するだけで十分。'},
+     {n:2,title:'0.5秒遅れで同期する',desc:'相手が息を吸う→0.5秒後に自分も吸う。完全一致より「少し遅れる」方が自然で効果的。'},
+     {n:3,title:'感情的な場面で呼吸を深める',desc:'重要な話をする前に自分の呼吸を深くゆっくりにする→相手の呼吸も追随してくる。'},
+     {n:4,title:'「なぜかこの人とは楽」を作る',desc:'呼吸同期は意識されずに起きる。「なぜかこの人と話すと落ち着く」という感覚の神経生理学的正体。'},
+   ],
+   key:'呼吸同期は最も強力な生理同期ツール。意識されずに「この人は信頼できる」を作る'},
+];
+
+/* ══ MIND データ ══ */
+const MIND_MICRO=[
+  {face:'眉が内側に寄り下がる',emotion:'怒り・フラストレーション',action:'反論を控え共感を先行。「おっしゃる通りです」から入る',color:'var(--soma)'},
+  {face:'口角が一瞬下がる（片側）',emotion:'軽蔑・優位感',action:'相手のプライドを立てる言葉を挿入。「さすがですね」',color:'var(--nous)'},
+  {face:'上唇が一瞬めくれる',emotion:'嫌悪・拒否感',action:'提案を変える・話題を変える。続けると逆効果',color:'var(--soma)'},
+  {face:'目が一瞬大きく開く',emotion:'驚き・予期しない情報',action:'そこを掘り下げる。「どう思われましたか？」',color:'var(--morphe)'},
+  {face:'口角が両側に上がる（目は動かない）',emotion:'社交的笑顔（本物でない）',action:'まだ本音の信頼は得られていない。もう一歩踏み込む',color:'var(--logos)'},
+  {face:'鼻孔が広がる',emotion:'怒り・興奮・嫌悪',action:'トーンを下げ、ペースを落とす。空気を変える',color:'var(--soma)'},
+  {face:'唇を噛む・なめる',emotion:'不安・緊張・考え中',action:'「急がなくていいですよ」と空間を与える',color:'var(--pneuma)'},
+];
+
+const MIND_EYE=[
+  {move:'左上（相手視点から右上）',mean:'視覚的記憶を呼び出している',action:'「その時の場面を教えてください」→視覚記憶にアクセスしている'},
+  {move:'右上（相手視点から左上）',mean:'視覚的な構築（想像・嘘の構築）',action:'新しいビジョンを見せている可能性。確認が必要'},
+  {move:'左横',mean:'聴覚的記憶',action:'「どんな言葉でしたか？」→音声記憶にアクセス中'},
+  {move:'右横',mean:'内的対話・自問自答',action:'迷っている—押すより待つが正解。沈黙を与える'},
+  {move:'左下',mean:'内省・感情アクセス',action:'感情的に考えている→「どう感じましたか？」が最有効'},
+  {move:'右下',mean:'身体感覚・キネステティック',action:'「体でどう感じますか？」→感覚的な言語が響く'},
+  {move:'視線が下に落ちる',mean:'服従・思考・恥',action:'文脈で判断。思考中なら待つ。服従なら圧力を緩める'},
+];
+
+const MIND_VOICE=[
+  {signal:'話す速度が速くなった',mean:'興奮・熱意または不安・嘘',action:'ペースを下げて落ち着かせる。または興奮なら共鳴する'},
+  {signal:'声が低くなった',mean:'確信・支配または抑圧した怒り',action:'低い声には低い声で返す。権威の共鳴を作る'},
+  {signal:'文末が上がる（疑問調）',mean:'確信がない・承認を求めている',action:'承認の言葉で背中を押す。「そうですよ」'},
+  {signal:'沈黙が長くなった',mean:'深く考えている・または抵抗',action:'沈黙を埋めない。待つ側が強い'},
+  {signal:'笑い声が多くなった',mean:'緊張が解けてきた・親密度上昇',action:'ここが提案・クロージングのチャンス'},
+  {signal:'声のトーンが単調になった',mean:'退屈・疲労・感情的遮断',action:'話題を変えるか、直接「どう思いますか？」と聞く'},
+];
+
+const MIND_POSTURE=[
+  {signal:'腕を組む',mean:'防衛・反論・寒さ',action:'熱い飲み物を提供。または話題を和らげる'},
+  {signal:'体が後ろに引ける',mean:'不同意・不快・距離を置きたい',action:'圧力を下げる。質問形式に変える'},
+  {signal:'体が前傾みになった',mean:'興味・関与・同意の増加',action:'今が核心を話すチャンス。重要提案のタイミング'},
+  {signal:'首を傾ける',mean:'好奇心・関心・傾聴',action:'続ける。相手はあなたの話に引き込まれている'},
+  {signal:'足が出口に向く',mean:'早く終わりたい・立ち去りたい',action:'「あと少しだけ」か「今日はここまでにしましょう」'},
+  {signal:'物（ペンなど）を触り続ける',mean:'緊張・退屈・考え中',action:'「何かご懸念はありますか？」と直接聞く'},
+];
+
+/* ══ NEGOTIUM データ ══ */
+const NEG_PREP=[
+  {step:1,title:'相手のコルチゾール状態を読む',emoji:'🔍',
+   signals:['額や首筋の発汗','声のトーンが上がっている・早口','腕を組む・身体が後ろに引ける','目線が左下（不安・内省）に向く'],
+   action:'高コルチゾール相手には：まず話を聴く→共感→コルチゾールを下げてから本題へ'},
+  {step:2,title:'空間と座席の戦略的選択',emoji:'🏛',
+   signals:['窓がある部屋→コルチゾール低下','自然光→セロトニン上昇→協力的態度','角の席（90度）→正面対決より合意率23%向上','相手に窓を背にさせない→眩しさ→コルチゾール上昇'],
+   action:'可能なら自分が提案して会場を選ぶ。カフェなら窓際・並び席が最適'},
+  {step:3,title:'開始前10分間プロトコル',emoji:'⏱',
+   signals:['パワーポーズ2分→テストステロン↑コルチゾール↓（Cuddy研究）','腹式呼吸5回→副交感神経優位化','過去の最高交渉・成功体験を想起→自信回路を事前活性化','シダーウッド系香水→コルチゾール28%低下'],
+   action:'会場到着10分前には準備完了。リラックス演技も重要シグナル'},
+  {step:4,title:'ミラーリングで脳間同期を誘導',emoji:'🪞',
+   signals:['相手の姿勢を3秒遅れで真似る','呼吸リズムを合わせる','話す速度・音量を相手に合わせる','ミラーニューロンが「仲間」認知→オキシトシン上昇'],
+   action:'開始5分は意識的にミラーリング。同期成功したら本題へ'},
+];
+
+const NEG_COLOR=[
+  {color:'ネイビーブルー',hex:'#1e3a5f',emoji:'🔵',effect:'信頼×権威×誠実',
+   brain:'前頭前皮質の信頼回路を活性化。青色は副交感神経を刺激しコルチゾールを低下させる',
+   use:'重要な交渉・契約締結・初対面のビジネス場面',avoid:'感情的・創造的な議論を要する場面'},
+  {color:'チャコールグレー',hex:'#374151',emoji:'⚫',effect:'中立×知性×安定',
+   brain:'感情的反応を最小化。「判断を委ねやすい」という心理的安全を相手に与える',
+   use:'価格交渉・条件変更の依頼・デリケートな議題',avoid:'インスピレーションや熱意を示したい場面'},
+  {color:'ディープグリーン',hex:'#14532d',emoji:'🟢',effect:'調和×成長×自然',
+   brain:'前帯状皮質（協調回路）を刺激。扁桃体の警戒を低下させ「敵意なし」を非言語で伝える',
+   use:'合意形成・パートナーシップ構築・長期関係の場面',avoid:'強さ・支配を見せる必要がある場面'},
+  {color:'バーガンディ',hex:'#7f1d1d',emoji:'🔴',effect:'情熱×自信×力強さ',
+   brain:'テストステロン的な優位シグナル。交感神経を適度に刺激し「重要な相手」という認知を作る',
+   use:'自信を示したい初回プレゼン・強い立場での交渉',avoid:'相手を萎縮させてはいけない関係修復の場面'},
+  {color:'ライトベージュ',hex:'#d6c4a1',emoji:'🟤',effect:'親しみ×安全×開放',
+   brain:'母性的安心感シグナル。オキシトシン放出を促進し「この人なら話せる」感覚を作る',
+   use:'初対面・敵意が予想される相手・関係修復',avoid:'地位や専門性を強調する必要がある場面'},
+];
+
+const NEG_SCENT=[
+  {name:'シダーウッド系',emoji:'🌲',molecules:'セドロール・アトラノール',
+   effect:'コルチゾール28%低下（研究実証済み）',
+   brain:'扁桃体を直接抑制→相手の警戒心が物理的に低下',
+   recs:['Dior Homme','Tom Ford Grey Vetiver','Hermes Terre dHermes'],
+   scene:'権威ある交渉・上位者との会議・敵対的な相手'},
+  {name:'ラベンダー+シトラス',emoji:'🌿',molecules:'リナロール・リモネン',
+   effect:'作業効率19%向上・心拍変動改善',
+   brain:'前頭前皮質の理性的判断を促進。「この場所は安全」という環境シグナル',
+   recs:['Acqua di Giò','Chanel Allure Homme Sport','Davidoff Cool Water'],
+   scene:'複雑な条件交渉・長時間会議・創造的問題解決'},
+  {name:'バニラ+ムスク',emoji:'🍦',molecules:'バニリン・ガラクソリド',
+   effect:'信頼感形成速度2倍（Vlahos研究）',
+   brain:'扁桃体の親和性回路を刺激。母性的・家族的な安心感を誘発',
+   recs:['YSL Y EDP','Giorgio Armani Acqua di Gio Absolu','Prada L\'Homme'],
+   scene:'パートナーシップ提案・長期契約・感情が重要な交渉'},
+];
+
+const NEG_HORMONE=[
+  {hormone:'コルチゾール（ストレス）',emoji:'⚗️',color:'var(--soma)',enemy:true,
+   effect:'高いと：判断力低下・短絡思考・防衛的態度・交渉結果が23%悪化',
+   items:['交渉2時間前：5分の腹式呼吸（副交感神経優位化）','シダーウッド系香水（コルチゾール28%低下）','パワーポーズ2分（Amy Cuddy研究）','前夜の十分な睡眠（6時間未満で前頭前皮質機能30%低下）']},
+  {hormone:'テストステロン（自信）',emoji:'💪',color:'var(--nous)',enemy:false,
+   effect:'高いと：自信・支配・リスク許容・交渉での主導権確保',
+   items:['交渉直前の軽い運動（10分のウォーク）','勝利体験の想起（過去の成功を思い出す）','パワーポーズ（腕を広げる・背筋を伸ばす）','低音で話す準備（テストステロンと低音は相関）']},
+  {hormone:'オキシトシン（信頼）',emoji:'🤝',color:'var(--pneuma)',enemy:false,
+   effect:'相手のオキシトシンが高いと：協力的・条件に柔軟・長期的視点で判断',
+   items:['開始前の小さな親切（飲み物を用意する等）','名前を3回以上呼ぶ','状況に応じた軽いボディタッチ','共通の話題から始める（仲間意識→オキシトシン放出）']},
+  {hormone:'ドーパミン（動機）',emoji:'🎯',color:'var(--logos)',enemy:false,
+   effect:'相手のドーパミンが高いと：提案を前向きに評価・リスクを取る意欲・合意への意欲',
+   items:['「共に勝てる」ビジョンの提示','具体的な成功イメージを言語化させる','小さなYESを積み重ねる（Yes Ladder）','希少性・限定性の提示（損失回避×ドーパミン）']},
+];
+
+/* ══ VITA データ ══ */
+const VITA_PHASES=[
+  {phase:1,age:'20〜29歳',label:'探索・発見期',emoji:'🌱',color:'var(--pneuma)',
+   brain:'前頭前皮質が発達中。可塑性最大期。新しい経験が神経回路を急速に形成する。',
+   hormone:'テストステロン・エストロゲンがピーク。ドーパミン感受性が最高。リスク許容度が生涯最大。',
+   logos:'多読・多体験で知識の土台を広げる。専門分野を1つ決めて深堀りを始める',
+   morphe:'自分の「外見戦略」を実験する時期。試行錯誤が最もコストが低い',
+   pneuma:'人間関係のパターンを学ぶ。メンターを3人作る。コミュニティに飛び込む',
+   soma:'運動習慣を今すぐ作る。30代以降の基盤は20代に決まる。睡眠7〜9時間の習慣化',
+   nous:'自分の価値観・強みを発見する時期。MBTIより行動パターンで自己理解',
+   strategy:'「量より質」より「まず量」。失敗コストが最も低い時期に最大限の行動を'},
+  {phase:2,age:'30〜39歳',label:'構築・専門化期',emoji:'🌿',color:'var(--logos)',
+   brain:'前頭前皮質が完成（25歳頃）。論理的判断・感情制御が安定。専門的スキルの急速な蓄積期。',
+   hormone:'テストステロン緩やかに低下開始。コルチゾール管理が課題。オキシトシンによる絆が仕事の生産性に影響。',
+   logos:'1つの専門で「この人に聞けばいい」と言われるレベルへ。T字型人材になる',
+   morphe:'ブランド構築（個人・会社）。見た目の投資ROIが最も高い時期',
+   pneuma:'「信頼資本」を積み上げる。紹介ネットワークを作る。部下・後輩の育成',
+   soma:'デスクワーク対策。腰・目・肩のケアを今から。運動は週3回以上を死守',
+   nous:'システム思考・メタ認知を鍛える。「なぜ」を5回掘り下げる習慣',
+   strategy:'深さと信頼の蓄積。「100人に知られる」より「10人に信頼される」'},
+  {phase:3,age:'40〜49歳',label:'統合・影響期',emoji:'🌳',color:'var(--morphe)',
+   brain:'神経可塑性は続くが変化が遅くなる。パターン認識能力が最大化。「見えないものが見える」直感の完成期。',
+   hormone:'テストステロン・エストロゲンが低下（更年期移行期）。BDNF維持が知的生産性の鍵。睡眠の質管理が重要。',
+   logos:'専門×経験の統合知が武器。「点と点が繋がる」洞察力が最高値に達する',
+   morphe:'オーラ・存在感の時代。外見より内側から滲み出るものが印象を決める',
+   pneuma:'影響力×チームビルディング。「話す」より「聴く」リーダーシップ',
+   soma:'筋肉量の維持が最優先（40代から急激に落ちる）。週2回の筋トレが必須',
+   nous:'哲学・長期的視点・次世代への還元。「自分の仕事は何の役に立つか」',
+   strategy:'影響力の最大化。自分を超える人を育てることが最大のレガシー'},
+  {phase:4,age:'50〜64歳',label:'賢慮・継承期',emoji:'🍁',color:'var(--soma)',
+   brain:'ビッグピクチャー思考が最大化。両脳半球の統合が進む。直感と論理が融合した「賢慮」の時代。',
+   hormone:'性ホルモン大幅低下。BDNFとメラトニンの管理が脳の老化速度を決める。コルチゾール管理が最重要。',
+   logos:'知識より「判断力・選別力」。何をやらないかを決める力が価値になる',
+   morphe:'「場の空気を作る」存在感。服より姿勢・表情・声が印象の90%を決める',
+   pneuma:'対話より傾聴。次世代の言葉を理解する努力が影響力を維持する鍵',
+   soma:'有酸素運動×筋トレの組み合わせが脳の老化を最大10年遅らせる（研究実証）',
+   nous:'人生の意味・遺すもの・何者であるか。エリクソンの「生成継承性」の時代',
+   strategy:'継承と深化。自分の知恵を次世代に渡すことが最大の仕事'},
+  {phase:5,age:'65歳〜',label:'超越・完成期',emoji:'🌅',color:'var(--nous)',
+   brain:'結晶性知能が最大化（生涯学習で維持）。感情調節が最も安定する時期。神経科学的に「最も幸福に近い年代」。',
+   hormone:'DHEA・成長ホルモン低下。但し精神的充実感がコルチゾールを抑制。生きがいがBDNFを産生する。',
+   logos:'生涯学習が神経可塑性を維持。新しいことを学ぶことが最大の脳の薬',
+   morphe:'内側からの輝き。スタイルより清潔感・笑顔・姿勢が全てを語る',
+   pneuma:'深い対話と傾聴。人生経験から来る言葉の重みが最大値に達する',
+   soma:'ウォーキング×軽い筋トレ×社会的繋がりが寿命と認知機能の最強トリオ',
+   nous:'超越的な視点。「自分を超えた何か」への繋がりが最大の精神的安定をもたらす',
+   strategy:'存在することが価値。生きていること自体が次世代への贈り物'},
+];
+
+/* ══ MISSION データ ══ */
+const MISSION_DOMAINS=[
+  {id:'work',label:'💼 仕事・業務',desc:'日常業務・タスク管理'},
+  {id:'present',label:'🎤 発表・プレゼン',desc:'説明・提案・登壇'},
+  {id:'negotiate',label:'🤝 交渉・説得',desc:'合意形成・条件調整'},
+  {id:'create',label:'💡 創造・企画',desc:'アイデア・イノベーション'},
+  {id:'recover',label:'🌙 回復・整える',desc:'ストレス回復・リセット'},
+  {id:'connect',label:'👥 人間関係構築',desc:'信頼・ネットワーク'},
+];
+const MISSION_CONTEXT=[
+  {id:'boss',label:'👔 上司・権威者'},{id:'peer',label:'🤝 同僚・同期'},
+  {id:'client',label:'💼 顧客・取引先'},{id:'team',label:'👥 チーム・部下'},
+  {id:'solo',label:'🧘 単独作業'},{id:'public',label:'🎭 大勢の前'},
+];
+const MISSION_GOALS=[
+  {id:'trust',label:'🔗 信頼を構築'},{id:'focus',label:'🎯 集中・深い仕事'},
+  {id:'persuade',label:'💬 説得・合意'},{id:'inspire',label:'✨ 鼓舞・動機付け'},
+  {id:'recover',label:'🌿 回復・充電'},{id:'create',label:'💡 創造・発想'},
+];
+
+/* ══ SYNC 初期化 ══ */
+function initSync(){
+  renderSyncNeural();
+}
+function renderSyncNeural(){
+  const el=document.getElementById('sync-neural');
+  if(!el||el._init)return; el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--morphe)">🧠 脳間同期</div>';
+  h+='<div class="pg-sub">Princeton・UCLAの最新神経科学研究に基づく。2人の脳を意図的に同期させる技術。</div></div>';
+  SYNC_NEURAL.forEach(d=>{
+    h+=`<div class="acc" style="border-left:4px solid ${d.color}">`;
+    h+=`<div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">`;
+    h+=`<span class="acc-ico">${d.emoji}</span>`;
+    h+=`<span class="acc-title" style="color:${d.color}">${d.title}</span></div>`;
+    h+=`<div class="acc-body"><div class="science-box">🔬 ${d.science}</div>`;
+    h+=`<div style="font-size:.58rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin-bottom:.28rem">実践テクニック</div>`;
+    d.practice.forEach(p=>{h+=`<div style="font-size:.65rem;color:var(--txt2);padding:.2rem .48rem;background:var(--sur2);border-radius:4px;margin-bottom:.14rem;line-height:1.65">・${p}</div>`;});
+    h+=`<div class="practice-box" style="margin-top:.4rem">⚡ KEY: ${d.key}</div>`;
+    h+='</div></div>';
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderSyncPhysio(){
+  const el=document.getElementById('sync-physio');
+  if(!el||el._init)return; el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--soma)">💓 生理同期</div>';
+  h+='<div class="pg-sub">心拍・瞳孔・姿勢が同期すると「なぜかこの人とは合う」という感覚が生まれる。相手の身体シグナルを読み、同期を意図的に作る。</div></div>';
+  SYNC_PHYSIO.forEach(d=>{
+    h+=`<div class="acc" style="border-left:4px solid ${d.color}">`;
+    h+=`<div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">`;
+    h+=`<span class="acc-ico">${d.emoji}</span>`;
+    h+=`<span class="acc-title" style="color:${d.color}">${d.title}</span></div>`;
+    h+=`<div class="acc-body"><div class="science-box">🔬 ${d.science}</div>`;
+    h+=`<div style="font-size:.58rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin:.3rem 0 .2rem">読むべきシグナル</div>`;
+    d.signals.forEach(s=>{h+=`<div style="font-size:.65rem;color:var(--txt2);padding:.2rem .48rem;background:var(--sur2);border-radius:4px;margin-bottom:.14rem">・${s}</div>`;});
+    h+=`<div class="practice-box" style="margin-top:.4rem">🎯 ${d.action}</div>`;
+    h+='</div></div>';
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderSyncBreath(){
+  const el=document.getElementById('sync-breath');
+  if(!el||el._init)return; el._init=true;
+  const d=SYNC_BREATH[0];
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--pneuma)">💨 呼吸同期プロトコル</div>';
+  h+=`<div class="pg-sub">${d.science}</div></div>`;
+  d.steps.forEach(s=>{
+    h+=`<div class="card"><div class="card-hd">
+      <div class="card-ico" style="background:var(--pneuma-xl);color:var(--pneuma);font-size:.85rem;font-weight:700">${s.n}</div>
+      <div><div class="card-hd-title">${s.title}</div></div></div>
+      <div class="card-bd"><div class="txt-sm">${s.desc}</div></div></div>`;
+  });
+  h+=`<div class="acc" style="margin:.4rem .85rem"><div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+    <span class="acc-ico">⚡</span><span class="acc-title">KEY POINT</span></div>
+    <div class="acc-body"><div class="practice-box">${d.key}</div></div></div>`;
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderSyncAI(){
+  const el=document.getElementById('sync-ai');
+  if(!el||el._init)return; el._init=true;
+  el.innerHTML=`<div class="pg-hd"><div class="pg-title">🤖 リアルタイム同期診断</div>
+  <div class="pg-sub">今観察している相手のシグナルを入力→AIが「今すべき行動」を即生成</div></div>
+  <div style="padding:0 .85rem">
+    <textarea id="sync-situation" placeholder="例: 相手が急に腕を組み、視線を外して左下を見ています。声のトーンが低くなり、返答が短くなりました。どうすれば良いですか？"
+        rows="4"
+        style="width:100%;padding:.62rem .72rem;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);font-size:.72rem;color:var(--txt);resize:none;line-height:1.65"></textarea>
+    <button onclick="runSyncAI()" id="sync-ai-btn"
+        style="width:100%;
+          padding:.72rem;
+          border-radius:var(--rf);
+          background:linear-gradient(135deg,var(--morphe),var(--nous));border:none;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.45rem">🧠 今すべき行動を生成</button>
+  </div>
+  <div id="sync-ai-result" style="padding:.7rem .85rem;display:none"></div>`;
+}
+async function runSyncAI(){
+  const sit=document.getElementById('sync-situation').value.trim();
+  if(!sit)return;
+  const btn=document.getElementById('sync-ai-btn');
+  const res=document.getElementById('sync-ai-result');
+  btn.disabled=true;btn.textContent='分析中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:1rem;color:var(--txt3);font-size:.72rem">🧠 神経科学的に分析中...</div>';
+  const sys=`あなたは脳間同期・生理同期・マインドリーディングの専門家です。
+観察した相手の身体・行動シグナルを分析し以下を日本語で答えてください：
+1. 相手の今の感情・心理状態の診断（神経・ホルモンレベルで）
+2. 脳間同期の現在の状態（高い/低い/乱れている）
+3. 今この瞬間すべき具体的行動（言葉・動作・距離・声のトーン）
+4. 次の5分間のプロトコル
+5. 避けるべき行動
+簡潔に、即実践できる形で。`;
+  const reply=await callGemini(sys,`観察シグナル: ${sit}`,1200);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false;btn.textContent='🧠 今すべき行動を生成';
+  await WS.set('sync_last',{sit,reply,ts:Date.now()});
+}
+
+/* ══ MIND 初期化 ══ */
+function initMind(){renderMindMicro();}
+function renderMindMicro(){
+  const el=document.getElementById('mind-micro');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--nous)">😶 微表情解読</div>';
+  h+='<div class="pg-sub">Paul Ekman研究：0.04〜0.2秒で現れる抑制できない本音の感情。7つの普遍的感情が顔に現れる。仕事・交渉・面接で活用。</div></div>';
+  MIND_MICRO.forEach(d=>{
+    h+=`<div class="acc" style="border-left:4px solid ${d.color}">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">😶</span>
+        <div style="flex:1"><div class="acc-title" style="color:${d.color}">${d.face}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">→ ${d.emotion}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">感情: <strong>${d.emotion}</strong></div>
+        <div class="practice-box">✓ 対処: ${d.action}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderMindEye(){
+  const el=document.getElementById('mind-eye');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--morphe)">👀 眼球運動パターン</div>';
+  h+='<div class="pg-sub">眼球の動きが思考プロセスを反映する。仕事の場で相手の内部処理状態を読む実用的観察ツール。</div></div>';
+  MIND_EYE.forEach(d=>{
+    h+=`<div class="acc">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">👀</span>
+        <div style="flex:1"><div class="acc-title">${d.move}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">${d.mean}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">→ <strong>${d.mean}</strong></div>
+        <div class="practice-box">✓ 対処: ${d.action}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderMindVoice(){
+  const el=document.getElementById('mind-voice');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--pneuma)">🎵 声紋・パラ言語分析</div>';
+  h+='<div class="pg-sub">Albert Mehrabian研究：コミュニケーションの38%が声のトーン・速度・音量で決まる。内容より「どう言うか」が感情的な印象を支配する。</div></div>';
+  MIND_VOICE.forEach(d=>{
+    h+=`<div class="acc">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">🎵</span>
+        <div style="flex:1"><div class="acc-title">${d.signal}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">${d.mean}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">→ <strong>${d.mean}</strong></div>
+        <div class="practice-box">✓ 対処: ${d.action}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderMindPosture(){
+  const el=document.getElementById('mind-posture');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--soma)">🤸 姿勢・動作シグナル</div>';
+  h+='<div class="pg-sub">言葉を使わずに相手の心理状態・意図を読む。ビジネスの場で最も使える非言語読解術。</div></div>';
+  MIND_POSTURE.forEach(d=>{
+    h+=`<div class="acc">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">🤸</span>
+        <div style="flex:1"><div class="acc-title">${d.signal}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">${d.mean}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">→ <strong>${d.mean}</strong></div>
+        <div class="practice-box">✓ 対処: ${d.action}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderMindAI(){
+  const el=document.getElementById('mind-ai');
+  if(!el||el._init)return;el._init=true;
+  el.innerHTML=`<div class="pg-hd"><div class="pg-title">🤖 マインドリーディングAI</div>
+  <div class="pg-sub">観察した相手の言動・表情・声を入力→AIが深層心理を診断</div></div>
+  <div style="padding:0 .85rem">
+    <textarea id="mind-situation" placeholder="例: 会議中、部長が私の提案を聞きながら口角を片側だけ上げ、腕を組みました。声は低く「なるほど」とだけ言いました..."
+        rows="4"
+        style="width:100%;padding:.62rem .72rem;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);font-size:.72rem;color:var(--txt);resize:none;line-height:1.65"></textarea>
+    <button onclick="runMindAI()" id="mind-ai-btn"
+        style="width:100%;
+          padding:.72rem;
+          border-radius:var(--rf);
+          background:linear-gradient(135deg,var(--nous),var(--soma));border:none;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.45rem">👁 深層心理を診断</button>
+  </div>
+  <div id="mind-ai-result" style="padding:.7rem .85rem;display:none"></div>`;
+}
+async function runMindAI(){
+  const sit=document.getElementById('mind-situation').value.trim();
+  if(!sit)return;
+  const btn=document.getElementById('mind-ai-btn');
+  const res=document.getElementById('mind-ai-result');
+  btn.disabled=true;btn.textContent='分析中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:1rem;color:var(--txt3);font-size:.72rem">👁 マインドリーディング中...</div>';
+  const sys=`あなたは微表情・眼球運動・パラ言語・姿勢の専門家（Ekman理論×NLP×神経言語学）です。
+観察した相手の行動から以下を日本語で分析してください：
+1. 本音の感情（表面の言葉と内側のギャップ）
+2. 今の心理状態（ホルモン・神経レベルで）
+3. 次の行動の予測
+4. 最適な対応戦略（言葉・態度・タイミング）
+5. 避けるべき言動
+具体的・実践的に。`;
+  const reply=await callGemini(sys,`観察内容: ${sit}`,1200);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false;btn.textContent='👁 深層心理を診断';
+  await WS.set('mind_last',{sit,reply,ts:Date.now()});
+}
+
+/* ══ NEGOTIUM 初期化 ══ */
+function initNeg(){renderNegPrep();}
+function renderNegPrep(){
+  const el=document.getElementById('neg-prep');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title">🎯 交渉前完全準備プロトコル</div>';
+  h+='<div class="pg-sub">脳科学に基づく4ステップ事前設計。相手の神経状態を読み、自分の最適状態を作る。</div></div>';
+  NEG_PREP.forEach(p=>{
+    h+=`<div class="acc"><div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+      <div style="width:28px;height:28px;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--pneuma),var(--morphe));
+        color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">${p.step}</div>
+      <span class="acc-title">${p.emoji} ${p.title}</span></div>
+      <div class="acc-body">
+        <div style="font-size:.58rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin-bottom:.28rem">🔍 読むべきシグナル</div>
+        ${p.signals.map(s=>`<div style="font-size:.65rem;color:var(--txt2);padding:.2rem .48rem;background:var(--sur2);border-radius:4px;margin-bottom:.14rem;line-height:1.6">・${s}</div>`).join('')}
+        <div class="practice-box" style="margin-top:.4rem">⚡ ${p.action}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderNegColor(){
+  const el=document.getElementById('neg-color');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title">🎨 交渉のための色彩神経科学</div>';
+  h+='<div class="pg-sub">色は0.05秒で扁桃体に届き、相手のコルチゾール・オキシトシン・テストステロンを変える。服の色は最強の非言語交渉ツール。</div></div>';
+  NEG_COLOR.forEach(c=>{
+    h+=`<div class="acc" style="border-left:5px solid ${c.hex}">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <div style="width:22px;height:22px;border-radius:50%;background:${c.hex};flex-shrink:0"></div>
+        <div><div class="acc-title">${c.emoji} ${c.color}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">${c.effect}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">🧠 ${c.brain}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.38rem">
+          <div style="padding:.42rem .55rem;background:${c.hex}15;border-radius:var(--r1);border:1px solid ${c.hex}30">
+            <div style="font-size:.54rem;font-weight:700;color:${c.hex};margin-bottom:.12rem">✓ 使うべき場面</div>
+            <div class="txt-xs">${c.use}</div></div>
+          <div style="padding:.42rem .55rem;background:var(--soma-xl);border-radius:var(--r1);border:1px solid var(--soma)20">
+            <div style="font-size:.54rem;font-weight:700;color:var(--soma);margin-bottom:.12rem">✗ 避けるべき場面</div>
+            <div class="txt-xs">${c.avoid}</div></div>
+        </div></div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderNegScent(){
+  const el=document.getElementById('neg-scent');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title">🧴 交渉のための香水神経科学</div>';
+  h+='<div class="pg-sub">嗅覚は唯一、扁桃体に直接届くセンサー。香りで相手のコルチゾールを下げ、オキシトシンを上げる。</div></div>';
+  NEG_SCENT.forEach(s=>{
+    h+=`<div class="acc">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">${s.emoji}</span>
+        <div><div class="acc-title">${s.name}</div>
+        <div style="font-size:.58rem;color:var(--txt3)">${s.molecules}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">🧪 効果: ${s.effect}<br>🧠 脳科学: ${s.brain}</div>
+        <div style="font-size:.58rem;font-weight:700;color:var(--txt3);margin:.28rem 0 .2rem">推奨フレグランス</div>
+        ${s.recs.map(r=>`<div style="font-size:.64rem;color:var(--txt2);padding:.18rem .48rem;background:var(--nous-xl);border-radius:4px;margin-bottom:.1rem">・${r}</div>`).join('')}
+        <div class="practice-box" style="margin-top:.38rem">🎯 最適シーン: ${s.scene}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderNegHormone(){
+  const el=document.getElementById('neg-hormone');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title">⚗️ 交渉ホルモン設計</div>';
+  h+='<div class="pg-sub">自分と相手の4つのホルモンを操作する。交渉の勝敗は開始前の生理状態で7割決まる。</div></div>';
+  NEG_HORMONE.forEach(d=>{
+    h+=`<div class="acc" style="border-left:4px solid ${d.color}">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">${d.emoji}</span>
+        <div style="flex:1">
+          <div class="acc-title" style="color:${d.color}">${d.hormone}</div>
+          <div style="font-size:.58rem;
+            padding:.15rem .38rem;
+            background:${d.enemy?'var(--soma-xl)':'var(--pneuma-xl)'};
+            border-radius:4px;margin-top:.1rem;display:inline-block;color:${d.enemy?'var(--soma)':'var(--pneuma)'}">
+            ${d.effect.substring(0,40)}...</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">${d.effect}</div>
+        <div style="font-size:.58rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin-bottom:.28rem">${d.enemy?'⬇️ 下げる方法':'⬆️ 高める方法'}</div>
+        ${d.items.map(i=>`<div style="font-size:.65rem;
+          color:var(--txt2);
+          padding:.2rem .48rem;
+          background:var(--sur2);border-radius:var(--r1);margin-bottom:.16rem;line-height:1.6">✓ ${i}</div>`).join('')}
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderNegAI(){
+  const el=document.getElementById('neg-ai');
+  if(!el||el._init)return;el._init=true;
+  el.innerHTML=`<div class="pg-hd"><div class="pg-title">🤖 AI交渉戦略アドバイザー</div>
+  <div class="pg-sub">状況を入力するとAIが脳科学×色彩×香水×ホルモン戦略を生成します</div></div>
+  <div style="padding:0 .85rem">
+    <textarea id="neg-situation" placeholder="例: 明日、取引先との価格交渉があります。相手はやや強硬派で、こちらの提案より30%高い金額を主張しています。値下げを求めたいが関係は維持したい..."
+        rows="4"
+        style="width:100%;padding:.62rem .72rem;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);font-size:.72rem;color:var(--txt);resize:none;line-height:1.65"></textarea>
+    <button onclick="runNegAI()" id="neg-ai-btn"
+        style="width:100%;
+          padding:.72rem;
+          border-radius:var(--rf);
+          background:linear-gradient(135deg,var(--pneuma),var(--morphe));border:none;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.45rem">🤝 AI交渉戦略を生成</button>
+  </div>
+  <div id="neg-ai-result" style="padding:.7rem .85rem;display:none"></div>`;
+}
+async function runNegAI(){
+  const sit=document.getElementById('neg-situation').value.trim();
+  if(!sit)return;
+  const btn=document.getElementById('neg-ai-btn');
+  const res=document.getElementById('neg-ai-result');
+  btn.disabled=true;btn.textContent='生成中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:1rem;color:var(--txt3);font-size:.72rem">🧠 脳科学的交渉戦略を生成中...</div>';
+  const sys=`あなたは脳神経科学・行動経済学・進化心理学の専門家で交渉コンサルタントです。
+状況を分析し以下の6軸で具体的な戦略を日本語で提供してください：
+1. 相手の推定ホルモン状態（コルチゾール・テストステロン）と対処法
+2. 服の色彩戦略（何色を着るべきか・脳科学的理由）
+3. 香水戦略（どの香調を選ぶか・分子レベルの理由）
+4. 脳間同期を誘導するミラーリング戦略
+5. 開始5分間の具体的行動プロトコル
+6. 最初に言うべき言葉・聞くべき質問
+実践的・具体的に。各項目を明確に区切ること。`;
+  const reply=await callGemini(sys,`交渉状況: ${sit}`,1400);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false;btn.textContent='🤝 AI交渉戦略を生成';
+  await WS.set('neg_last',{sit,reply,ts:Date.now()});
+}
+
+/* ══ VITA 初期化 ══ */
+function initVita(){renderVitaPhase();}
+function renderVitaPhase(){
+  const el=document.getElementById('vita-phase');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title" style="color:var(--pneuma)">🌱 人生フェーズ×脳科学</div>';
+  h+='<div class="pg-sub">20代から65歳以上まで。各フェーズの脳・ホルモン状態と最適戦略。今いるフェーズを選んで深掘りしてください。</div></div>';
+  VITA_PHASES.forEach(p=>{
+    h+=`<div class="acc" style="border-left:4px solid ${p.color}">
+      <div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+        <span class="acc-ico">${p.emoji}</span>
+        <div style="flex:1">
+          <div class="acc-title" style="color:${p.color}">Phase ${p.phase} — ${p.label}</div>
+          <div style="font-size:.58rem;color:var(--txt3)">${p.age}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">🧠 ${p.brain}</div>
+        <div class="science-box">⚗️ ${p.hormone}</div>
+        <div style="font-size:.58rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin-bottom:.28rem">五軸別最適戦略</div>
+        ${FIVE_AXES.map(a=>`<div style="padding:.32rem .52rem;background:var(--sur2);border-radius:var(--r1);margin-bottom:.18rem;border-left:3px solid ${a.color}">
+          <span style="font-size:.58rem;font-weight:700;color:${a.color}">${a.emoji} ${a.name}</span>
+          <div style="font-size:.64rem;color:var(--txt2);margin-top:.08rem">${p[a.id]||''}</div></div>`).join('')}
+        <div class="practice-box" style="margin-top:.4rem">🎯 ${p.strategy}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderVitaAxis(){
+  const el=document.getElementById('vita-axis');
+  if(!el||el._init)return;el._init=true;
+  let h='<div class="pg-hd"><div class="pg-title">📊 五軸セルフ診断</div>';
+  h+='<div class="pg-sub">各軸を0〜100でセルフスコアリング。今の自分の状態を可視化し、優先改善軸を特定する。</div></div>';
+  h+='<div style="padding:0 .85rem">';
+  FIVE_AXES.forEach(a=>{
+    h+=`<div style="margin-bottom:.85rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.3rem">
+        <div style="font-size:.72rem;font-weight:700;color:${a.color}">${a.emoji} ${a.name} — ${a.label}</div>
+        <div id="axis-val-${a.id}" style="font-size:.88rem;font-weight:700;color:${a.color}">70</div></div>
+      <div style="font-size:.6rem;color:var(--txt3);margin-bottom:.3rem">${a.desc}</div>
+      <input type="range" min="0" max="100" value="70" oninput="updateAxisScore('${a.id}',this.value)"
+        style="width:100%;accent-color:${a.color.replace('var(--','').replace(')','').replace('var(','')};height:4px">
+    </div>`;
+  });
+  h+=`<button onclick="saveAxisScores()"
+        style="width:100%;
+          padding:.72rem;
+          border-radius:var(--rf);
+          background:linear-gradient(135deg,var(--logos),var(--nous));border:none;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.3rem">📊 スコアを保存してAIアドバイスを取得</button>`;
+  h+='<div id="axis-ai-result" style="margin-top:.7rem;display:none"></div></div>';
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function updateAxisScore(id,val){
+  const el=document.getElementById('axis-val-'+id);
+  if(el)el.textContent=val;
+}
+async function saveAxisScores(){
+  const scores={};
+  FIVE_AXES.forEach(a=>{
+    const input=document.querySelector(`input[oninput*="${a.id}"]`);
+    scores[a.id]=input?parseInt(input.value):70;
+  });
+  await WS.set('axis_scores',scores);
+  renderHomeAxis();
+  // Firestoreに保存
+  const user=window.__fb?.auth?.currentUser;
+  if(user&&window.__fb?.db){
+    const {doc,updateDoc}=window.__fb;
+    try{await updateDoc(doc(window.__fb.db,'users',user.uid),{axisScores:scores});}catch{}
+  }
+  const res=document.getElementById('axis-ai-result');
+  if(res){
+    res.style.display='block';
+    res.innerHTML='<div style="text-align:center;padding:.8rem;color:var(--txt3);font-size:.72rem">🧠 AIアドバイス生成中...</div>';
+    const low=FIVE_AXES.filter(a=>scores[a.id]<60).map(a=>a.name+':'+scores[a.id]);
+    const sys=`あなたは人間の五軸（LOGOS/MORPHE/PNEUMA/SOMA/NOUS）を分析するコーチです。
+スコアの低い軸を優先して改善提案を日本語で提供してください。
+各軸について：①現状の課題②今週できる具体的行動②長期改善プロトコル を提示。`;
+    const reply=await callGemini(sys,`五軸スコア: ${JSON.stringify(scores)}\n低スコア軸: ${low.join(', ')}`,1200);
+    res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  }
+}
+function renderVitaHormone(){
+  const el=document.getElementById('vita-hormone');
+  if(!el||el._init)return;el._init=true;
+  const hormones=[
+    {name:'ドーパミン',emoji:'🎯',role:'モチベーション・報酬・集中',peak:'20〜30代ピーク。40代から感受性が低下',
+     boost:['新しいことへの挑戦（新奇性）','小さな達成を積み重ねる（完了感）','有酸素運動20分（即効性あり）','タンパク質豊富な食事（チロシン→ドーパミン）'],
+     work:'目標を小分けにする・完了リストを作る・達成を祝う'},
+    {name:'セロトニン',emoji:'☀️',role:'安定・幸福感・人間関係の質',peak:'日光×運動×社会的繋がりで維持可能',
+     boost:['朝10分の日光浴（即効性最大）','有酸素運動（最も研究実証が豊富）','腸内環境改善（腸-脳軸）','感謝日記3行（Emmons研究）'],
+     work:'チームの雰囲気が仕事の質に直結。自分の安定が周囲に伝播'},
+    {name:'オキシトシン',emoji:'🤝',role:'信頼・絆・チームワーク',peak:'社会的接触で産生。孤立で急低下',
+     boost:['対面での温かい会話・アイコンタクト','共同作業・協力体験','名前を呼ぶ（シンプルで最効率）','感謝・承認の言葉'],
+     work:'心理的安全性の基盤。チームのオキシトシンが集合的知性を高める'},
+    {name:'コルチゾール',emoji:'⚠️',role:'ストレス応答・炎症・判断力低下',peak:'慢性高値が最大の健康リスク',
+     boost:['5分の腹式呼吸（最速）','自然の中の20分散歩','睡眠7〜9時間（慢性不足で高値継続）','シダーウッド系香水（28%低下）'],
+     work:'コルチゾール高値状態での意思決定は短絡的・防衛的になる。重要会議は午前中'},
+    {name:'BDNF（脳由来神経栄養因子）',emoji:'🧬',role:'神経可塑性・学習・脳の若さ',peak:'運動で劇的に増加。加齢で低下するが維持可能',
+     boost:['有酸素運動（最も強力な産生刺激）','新しいスキル習慣（楽器・言語・スポーツ）','オメガ3脂肪酸（EPA/DHA）','断食・カロリー制限（軽度）'],
+     work:'BDNFが高いと学習速度・創造性・問題解決が向上。仕事の質を決める根本物質'},
+  ];
+  let h='<div class="pg-hd"><div class="pg-title">⚗️ 仕事を支配する5つのホルモン</div>';
+  h+='<div class="pg-sub">加齢とともに変化するホルモンを知り、意図的に操作する。これが仕事・人生のパフォーマンスを決める。</div></div>';
+  hormones.forEach(d=>{
+    h+=`<div class="acc"><div class="acc-hd" onclick="this.parentElement.classList.toggle('open')">
+      <span class="acc-ico">${d.emoji}</span>
+      <div><div class="acc-title">${d.name}</div>
+      <div style="font-size:.58rem;color:var(--txt3)">${d.role}</div></div></div>
+      <div class="acc-body">
+        <div class="science-box">📊 ${d.peak}</div>
+        <div style="font-size:.58rem;font-weight:700;color:var(--txt3);margin-bottom:.28rem text-transform:uppercase">増やす方法</div>
+        ${d.boost.map(b=>`<div style="font-size:.65rem;color:var(--txt2);padding:.2rem .48rem;background:var(--sur2);border-radius:4px;margin-bottom:.14rem">✓ ${b}</div>`).join('')}
+        <div class="practice-box" style="margin-top:.38rem">💼 仕事への影響: ${d.work}</div>
+      </div></div>`;
+  });
+  h+='<div style="height:.75rem"></div>';
+  el.innerHTML=h;
+}
+function renderVitaAI(){
+  const el=document.getElementById('vita-ai');
+  if(!el||el._init)return;el._init=true;
+  el.innerHTML=`<div class="pg-hd"><div class="pg-title">🤖 AI人生設計アドバイザー</div>
+  <div class="pg-sub">現在の状況・年齢・悩みを入力→AIが五軸×人生フェーズ×脳科学で人生戦略を生成</div></div>
+  <div style="padding:0 .85rem">
+    <textarea id="vita-situation" placeholder="例: 35歳。今の仕事に行き詰まりを感じています。転職すべきか、今の会社で続けるか、副業を始めるか、迷っています。体力は落ちてきた気がします..."
+        rows="4"
+        style="width:100%;padding:.62rem .72rem;border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);font-size:.72rem;color:var(--txt);resize:none;line-height:1.65"></textarea>
+    <button onclick="runVitaAI()" id="vita-ai-btn"
+        style="width:100%;
+          padding:.72rem;
+          border-radius:var(--rf);
+          background:linear-gradient(135deg,var(--pneuma),var(--logos));border:none;font-size:.8rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.45rem">🌱 AI人生戦略を生成</button>
+  </div>
+  <div id="vita-ai-result" style="padding:.7rem .85rem;display:none"></div>`;
+}
+async function runVitaAI(){
+  const sit=document.getElementById('vita-situation').value.trim();
+  if(!sit)return;
+  const btn=document.getElementById('vita-ai-btn');
+  const res=document.getElementById('vita-ai-result');
+  btn.disabled=true;btn.textContent='生成中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:1rem;color:var(--txt3);font-size:.72rem">🌱 人生戦略を設計中...</div>';
+  const sys=`あなたは神経科学・進化心理学・ポジティブ心理学のエキスパートで人生設計コンサルタントです。
+以下の5軸で具体的な人生戦略を日本語で提供してください：
+1. 現在の人生フェーズ診断（脳・ホルモン状態を踏まえて）
+2. LOGOS（知性）強化戦略
+3. PNEUMA（人間関係・コミュニケーション）戦略
+4. SOMA（身体・健康）最適化プロトコル
+5. NOUS（統合・創造・意味）深化のための行動
+6. 今週から始める最重要アクション3つ
+実践的・具体的・科学的根拠を添えて。`;
+  const reply=await callGemini(sys,`状況: ${sit}`,1600);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false;btn.textContent='🌱 AI人生戦略を生成';
+  await WS.set('vita_last',{sit,reply,ts:Date.now()});
+}
+
+/* ══ MISSION 初期化 ══ */
+let mDomain='',mContext='',mGoal='';
+function initMission(){
+  const el=document.getElementById('mission-content');
+  if(el&&el._init)return;
+  if(el)el._init=true;
+  renderMission();
+}
+function renderMission(){
+  const el=document.getElementById('mission-content');
+  if(!el)return;
+  el.innerHTML=`
+  <div class="pg-hd"><div class="pg-title">⚡ 今日の状況戦略</div>
+  <div class="pg-sub">3タップで五軸すべての最適戦略をAIが即生成</div></div>
+  <div style="padding:0 .85rem">
+    <div style="font-size:.6rem;font-weight:700;color:var(--logos);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.38rem">STEP 1 — 今日のドメイン</div>
+    <div class="chips" id="m-domain-chips">
+      ${MISSION_DOMAINS.map(d=>`<button class="chip" onclick="selectMChip('domain','${d.id}',this)">${d.label}</button>`).join('')}
+    </div>
+    <div style="font-size:.6rem;font-weight:700;color:var(--logos);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.38rem;margin-top:.7rem">STEP 2 — 相手・コンテキスト</div>
+    <div class="chips" id="m-context-chips">
+      ${MISSION_CONTEXT.map(c=>`<button class="chip" onclick="selectMChip('context','${c.id}',this)">${c.label}</button>`).join('')}
+    </div>
+    <div style="font-size:.6rem;font-weight:700;color:var(--logos);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.38rem;margin-top:.7rem">STEP 3 — 今日の目標</div>
+    <div class="chips" id="m-goal-chips">
+      ${MISSION_GOALS.map(g=>`<button class="chip" onclick="selectMChip('goal','${g.id}',this)">${g.label}</button>`).join('')}
+    </div>
+    <button class="sel-go" id="m-go-btn" disabled style="background:linear-gradient(135deg,var(--logos),var(--soma));margin-top:.7rem" onclick="runMission()">⚡ 五軸最適戦略を生成</button>
+  </div>
+  <div id="m-result" style="padding:.7rem .85rem;display:none"></div>`;
+}
+function selectMChip(type,val,btn){
+  const prefix={domain:'m-domain',context:'m-context',goal:'m-goal'}[type];
+  document.querySelectorAll(`#${prefix}-chips .chip`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(type==='domain')mDomain=val;
+  if(type==='context')mContext=val;
+  if(type==='goal')mGoal=val;
+  const go=document.getElementById('m-go-btn');
+  if(go)go.disabled=!(mDomain&&mContext&&mGoal);
+}
+async function runMission(){
+  const btn=document.getElementById('m-go-btn');
+  const res=document.getElementById('m-result');
+  btn.disabled=true;btn.textContent='生成中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:1rem;color:var(--txt3);font-size:.72rem">⚡ 五軸戦略を生成中...</div>';
+  const moon=moonPhase();
+  const sys=`あなたはHuman OSコーチで、脳科学×進化心理学×行動科学の専門家です。
+今日の状況に応じた五軸最適戦略を日本語で提供してください：
+🟡 LOGOS（知性・判断）：思考・情報整理・意思決定の具体的アクション
+🔵 MORPHE（環境・外見）：空間・服装・非言語の最適化
+🟢 PNEUMA（対話・伝達）：コミュニケーション戦略・言葉の選び方
+🟠 SOMA（身体・状態）：コンディション管理・事前準備
+🟣 NOUS（統合・創造）：全体最適・マインドセット・意味づけ
+各軸3〜4個の具体的アクションを提示。今日の月相（${moon.e}${moon.l}）も考慮すること。`;
+  const user=`ドメイン: ${mDomain} / コンテキスト: ${mContext} / 目標: ${mGoal}`;
+  const reply=await callGemini(sys,user,1600);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false;btn.textContent='⚡ 五軸最適戦略を生成';
+  await WS.set('mission_last',{domain:mDomain,context:mContext,goal:mGoal,reply,ts:Date.now()});
+}
+
+/* ══ ORACLE 初期化 ══ */
+let oracleMsgs=[];
+const ORACLE_QUICK=['今日の最重要アクションは？','集中力を上げる方法','交渉前にすべき準備','人間関係を改善したい','今の人生フェーズで何をすべきか'];
+function initOracle(){
+  if(document.getElementById('oracle-msgs')._init)return;
+  document.getElementById('oracle-msgs')._init=true;
+  const qbar=document.getElementById('oracle-quick');
+  if(qbar){
+    qbar.innerHTML=ORACLE_QUICK.map(q=>`<button
+        style="flex-shrink:0;padding:.2rem .5rem;border-radius:var(--rf);border:1px solid var(--bor);background:var(--sur);font-size:.55rem;color:var(--txt2);cursor:pointer;white-space:nowrap"
+          onclick="setOracleQ('${q}')">${q}</button>`).join('');
+  }
+  addAIMsg('こんにちは！NEXUS ORACLEです。🔮\n脳科学×人生設計×仕事最適化について、何でも聞いてください。\n\n今日の月相: '+moonPhase().e+moonPhase().l);
+  document.getElementById('oracle-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendOracle();}
+  });
+}
+function setOracleQ(q){document.getElementById('oracle-input').value=q;}
+function addUserMsg(t){
+  const msgs=document.getElementById('oracle-msgs');
+  const d=document.createElement('div');
+  d.className='msg user';
+  d.innerHTML=`<div class="msg-bubble">${t}</div>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function addAIMsg(t){
+  const msgs=document.getElementById('oracle-msgs');
+  const d=document.createElement('div');
+  d.className='msg ai';
+  d.innerHTML=`<div class="msg-bubble">${t}</div>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function showTyping(){
+  const msgs=document.getElementById('oracle-msgs');
+  const d=document.createElement('div');
+  d.className='msg ai';d.id='oracle-typing';
+  d.innerHTML=`<div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div>`;
+  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+}
+function hideTyping(){const t=document.getElementById('oracle-typing');if(t)t.remove();}
+async function sendOracle(){
+  const input=document.getElementById('oracle-input');
+  const send=document.getElementById('oracle-send');
+  const t=input.value.trim();
+  if(!t)return;
+  input.value='';send.disabled=true;
+  addUserMsg(t);
+  oracleMsgs.push({role:'user',content:t});
+  showTyping();
+  const moon=moonPhase();
+  const sys=`あなたはNEXUS Human OSのAIアドバイザーです。
+専門：脳神経科学・進化心理学・行動経済学・ポジティブ心理学・人生設計。
+以下のフレームワークを統合して回答する：
+■ 五軸：LOGOS（知性）/ MORPHE（環境）/ PNEUMA（対話）/ SOMA（身体）/ NOUS（統合）
+■ 脳間同期・生理同期・マインドリーディング
+■ 交渉×色彩×香水×ホルモン設計
+■ 人生フェーズ（20〜70代）の最適戦略
+今日の月相：${moon.e}${moon.l}
+回答は実践的・具体的・科学的根拠付きで。日本語で。`;
+  const history=oracleMsgs.slice(-6).map(m=>(m.role==='user'?'ユーザー':'AI')+': '+m.content).join('\n');
+  const reply=await callGemini(sys,history,1400);
+  hideTyping();
+  addAIMsg(reply);
+  oracleMsgs.push({role:'assistant',content:reply});
+  send.disabled=false;
+  // キャッシュ保存
+  await WS.set('oracle_history',oracleMsgs.slice(-20));
+  // Firestore保存
+  const user=window.__fb?.auth?.currentUser;
+  if(user&&window.__fb?.db){
+    try{
+      const {doc,updateDoc}=window.__fb;
+      await updateDoc(doc(window.__fb.db,'users',user.uid),{lastOracleAt:new Date().toISOString()});
+    }catch{}
+  }
+}
+
+/* ══ ACCOUNT 初期化 ══ */
+async function initAccount(){
+  const el=document.getElementById('account-content');
+  if(!el)return;
+  const user=window.__fb?.auth?.currentUser;
+  if(!user){el.innerHTML='<div class="pg-hd"><div class="pg-sub">ログインしてください</div></div>';return;}
+  let userData={};
+  try{
+    const {doc,getDoc}=window.__fb;
+    const snap=await getDoc(doc(window.__fb.db,'users',user.uid));
+    if(snap.exists())userData=snap.data();
+  }catch{}
+  const scores=await WS.get('axis_scores')||{logos:70,morphe:65,pneuma:75,soma:60,nous:70};
+  el.innerHTML=`
+  <div style="padding:1.2rem .9rem">
+    <div style="text-align:center;background:linear-gradient(135deg,var(--logos-xl),var(--nous-xl));border-radius:var(--r3);padding:1.4rem .9rem;margin-bottom:.85rem;border:1px solid var(--bor)">
+      <div style="width:54px;height:54px;
+        border-radius:50%;
+        background:linear-gradient(135deg,var(--logos),var(--nous));
+        display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto .55rem">👤</div>
+      <div style="font-family:var(--fd);font-size:1.05rem;font-weight:600">${user.displayName||userData.name||'ユーザー'}</div>
+      <div style="font-size:.62rem;color:var(--txt3);margin-top:.15rem">${user.email}</div>
+      <div style="font-size:.58rem;color:var(--txt3);margin-top:.08rem">登録日: ${userData.createdAt?.toDate?.()?.toLocaleDateString('ja-JP')||'---'}</div>
+    </div>
+    <div class="card"><div class="card-hd">
+      <div class="card-ico" style="background:var(--logos-xl)">📊</div>
+      <div><div class="card-hd-title">現在の五軸スコア</div>
+      <div class="card-hd-sub">VITAで更新できます</div></div></div>
+      <div class="card-bd">
+        ${FIVE_AXES.map(a=>`<div class="sbar">
+          <div class="sbar-hd"><span class="sbar-name">${a.emoji} ${a.name}</span><span class="sbar-val">${scores[a.id]||0}</span></div>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${scores[a.id]||0}%;background:${a.color}"></div></div>
+        </div>`).join('')}
+      </div></div>
+    <div class="card" style="margin-top:.5rem"><div class="card-bd">
+      <div style="font-size:.6rem;font-weight:700;color:var(--txt3);text-transform:uppercase;margin-bottom:.55rem">データ管理</div>
+      <div style="display:flex;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--bor)">
+        <span class="txt-sm">クラウド同期</span>
+        <span style="font-size:.7rem;color:var(--pneuma);font-weight:700">✓ Firebase</span></div>
+      <div style="display:flex;justify-content:space-between;padding:.38rem 0">
+        <span class="txt-sm">ローカルキャッシュ</span>
+        <span style="font-size:.7rem;color:var(--morphe);font-weight:700">✓ window.storage</span></div>
+    </div></div>
+    <button onclick="doLogout()"
+        style="width:100%;
+          padding:.7rem;
+          border-radius:var(--rf);
+          background:var(--sur2);border:1.5px solid var(--bor);font-size:.78rem;font-weight:700;color:var(--txt2);cursor:pointer;margin-top:.65rem">ログアウト</button>
+  </div>`;
+}
+async function doLogout(){
+  await window.__fb.signOut(window.__fb.auth);
+}
+
+/* ══ 起動シーケンス ══ */
+
+function openLifeRoom(){
+  try{
+    var fbUser=window.__fb&&window.__fb.auth?window.__fb.auth.currentUser:null;
+    if(fbUser){
+      localStorage.setItem("lifeRoomUser",JSON.stringify({
+        uid:fbUser.uid,
+        name:fbUser.displayName||fbUser.email||"Guest"
+      }));
+    }
+  }catch(e){}
+  window.open("life-room.html","_blank");
+}
+
+function bootApp(){
+  setTimeout(()=>{
+    document.getElementById('splash').classList.add('hide');
+    window.__fb.onAuthStateChanged(window.__fb.auth, async user=>{
+      if(user){
+        // ログイン済み
+        document.getElementById('auth-wrap').style.display='none';
+        document.getElementById('app').style.display='flex';
+        document.getElementById('bnav').style.display='flex';
+        initHome(user);
+        // Oracle履歴をキャッシュから復元
+        const hist=await WS.get('oracle_history');
+        if(hist&&hist.length)oracleMsgs=hist;
+      } else {
+        // 未ログイン
+        document.getElementById('auth-wrap').style.display='flex';
+        document.getElementById('app').style.display='none';
+        document.getElementById('bnav').style.display='none';
+      }
+    });
+  },2200);
+}
+/* Firebase module完了を待ってから起動 */
+if(window.__fb){bootApp();}
+else{window.addEventListener('fb-ready',bootApp);}
+/* フォールバック: 3秒後に強制起動 */
+setTimeout(()=>{
+  if(!document.getElementById('auth-wrap').style.display||
+     document.getElementById('auth-wrap').style.display===''){
+    bootApp();
+  }
+},3000);
+
+/* ══════════════════════════════════════════
+   PEOPLE — 人生バーチャル34人データ
+══════════════════════════════════════════ */
+const PEOPLE = [
+  /* ── 会社・ビジネス ── */
+  {id:'p01',cat:'💼 会社・ビジネス',name:'黒川 誠一',age:58,role:'ワンマン社長',emoji:'👔',
+   mbti:'ENTJ',element:'fire',hormone:'高テストステロン・低オキシトシン',
+   trait:'即断即決・プライド絶対・数字至上主義・懐柔に弱い',
+   sync:0,phase:1,
+   situations:['新規提案','価格交渉','クレーム対応','承認依頼'],
+   brain:'扁桃体の警戒が高い。テストステロンが高く支配欲が強い。自分より上の存在に弱い。',
+   approach:'数字と実績で話す。提案は「他社にはできない」から入る。絶対に謝らない。'},
+
+  {id:'p02',cat:'💼 会社・ビジネス',name:'田村 浩二',age:45,role:'データ重視の部長',emoji:'📊',
+   mbti:'INTJ',element:'earth',hormone:'高コルチゾール・中ドーパミン',
+   trait:'論理的・懐疑的・エビデンス命・感情に動かされない',
+   sync:0,phase:1,
+   situations:['データ提示','企画承認','予算交渉','成果報告'],
+   brain:'前頭前皮質が主導。感情より数字。コルチゾールが高いと承認しない。',
+   approach:'グラフと論文を持参。感情論は逆効果。「数字で証明できます」から始める。'},
+
+  {id:'p03',cat:'💼 会社・ビジネス',name:'中島 康子',age:42,role:'女性管理職（改革派）',emoji:'💪',
+   mbti:'ENFJ',element:'fire',hormone:'中テストステロン・高セロトニン',
+   trait:'ビジョン重視・人を動かす・共感力高い・根回し重視',
+   sync:0,phase:1,
+   situations:['チーム提案','新規プロジェクト','社内調整','メンタリング'],
+   brain:'前帯状皮質が活発。共感回路が強い。「人が喜ぶか」が判断基準。',
+   approach:'ビジョンと人への影響を語る。「チームが成長できる」を軸に。'},
+
+  {id:'p04',cat:'💼 会社・ビジネス',name:'松本 慎太郎',age:35,role:'板挟みの中間管理職',emoji:'😰',
+   mbti:'ISFJ',element:'water',hormone:'高コルチゾール・低テストステロン',
+   trait:'慎重・上下板挟み・リスク回避・変化を嫌う',
+   sync:0,phase:1,
+   situations:['稟議書通し','部内説得','上司説明','スケジュール調整'],
+   brain:'コルチゾール慢性高値。扁桃体の警戒が常時オン。「失敗しないこと」が最優先。',
+   approach:'「上司が喜ぶ・失敗しない」を強調。リスクを最小化する言い方で。'},
+
+  {id:'p05',cat:'💼 会社・ビジネス',name:'岡本 雄大',age:28,role:'数字命のバイヤー',emoji:'🛒',
+   mbti:'ESTJ',element:'earth',hormone:'中テストステロン・高ドーパミン',
+   trait:'コスト最優先・比較検討好き・YESまで長い・実績重視',
+   sync:0,phase:1,
+   situations:['見積交渉','仕様確認','競合比較','納期調整'],
+   brain:'ドーパミン回路が「お得感」で発火。損失回避が強い。',
+   approach:'費用対効果を最初に。「他社より○%安い」か「○%の節約になる」から入る。'},
+
+  {id:'p06',cat:'💼 会社・ビジネス',name:'小川 美穂',age:31,role:'関係重視の営業担当',emoji:'😊',
+   mbti:'ESFJ',element:'water',hormone:'高オキシトシン・高セロトニン',
+   trait:'人間関係優先・義理堅い・感情移入しやすい・長期信頼型',
+   sync:0,phase:1,
+   situations:['関係構築','情報収集','協力依頼','感謝表現'],
+   brain:'オキシトシンが判断を支配。「この人が好きか」が意思決定の軸。',
+   approach:'まず個人的な話。名前を3回呼ぶ。「あなたにお願いしたい」が最強。'},
+
+  /* ── 専門職・士業 ── */
+  {id:'p07',cat:'⚖️ 専門職・士業',name:'橘 法生',age:52,role:'弁護士（プライド型）',emoji:'⚖️',
+   mbti:'INTJ',element:'earth',hormone:'高テストステロン・低オキシトシン',
+   trait:'論理絶対・感情無視・権威意識強・妥協しない',
+   sync:0,phase:1,
+   situations:['法的相談','契約確認','トラブル対応','専門意見依頼'],
+   brain:'前頭前皮質が絶対的に主導。感情的訴えには冷淡。論理の穴を突かれると関係が崩れる。',
+   approach:'法的根拠を先に整理して臨む。「先生のご意見を仰ぎたい」から入る。'},
+
+  {id:'p08',cat:'⚖️ 専門職・士業',name:'今村 敬三',age:48,role:'税理士（几帳面）',emoji:'📊',
+   mbti:'ISTJ',element:'earth',hormone:'中コルチゾール・低ドーパミン',
+   trait:'数字の正確性命・期限厳守・感情表現少ない・信頼形成に時間',
+   sync:0,phase:1,
+   situations:['確定申告','節税相談','経費確認','財務報告'],
+   brain:'ルーティン回路が強い。変化は脅威。「正確に」「期限通りに」が安心シグナル。',
+   approach:'書類を完璧に揃えて行く。急な相談は嫌われる。「お時間をいただけますか」から。'},
+
+  {id:'p09',cat:'⚖️ 専門職・士業',name:'西田 麻里',age:38,role:'女医（論理×共感）',emoji:'👩‍⚕️',
+   mbti:'INFJ',element:'water',hormone:'バランス型・高BDNF',
+   trait:'論理的だが患者への共感も強い・完璧主義・判断が速い',
+   sync:0,phase:1,
+   situations:['診察','健康相談','セカンドオピニオン','職場健診'],
+   brain:'前頭前皮質×前帯状皮質の両方が活発。論理と共感の統合型。',
+   approach:'症状を正確に・感情も正直に話す。「先生を信頼しています」が効く。'},
+
+  /* ── 職人・技術者 ── */
+  {id:'p10',cat:'🔨 職人・技術者',name:'坂本 剛',age:55,role:'大工の親方',emoji:'🔨',
+   mbti:'ISTP',element:'earth',hormone:'高テストステロン・高セロトニン（安定型）',
+   trait:'口数少ない・仕事で見せる・義理堅い・よそ者に警戒・信頼したら一生もの',
+   sync:0,phase:1,
+   situations:['工事依頼','仕様変更','クレーム','追加費用交渉'],
+   brain:'感覚運動皮質が主導。「やってみせる」が言語。言葉より行動で信頼を作る。',
+   approach:'専門用語を使って対等に話す。お茶・差し入れは必須。急かさない。'},
+
+  {id:'p11',cat:'🔨 職人・技術者',name:'富田 正義',age:48,role:'電気工事士',emoji:'⚡',
+   mbti:'ISTP',element:'fire',hormone:'中テストステロン・高セロトニン',
+   trait:'実直・冗談好き・酒好き・サバサバ・値引き交渉は嫌い',
+   sync:0,phase:1,
+   situations:['工事依頼','設備相談','緊急対応','アフター交渉'],
+   brain:'実践的判断が速い。感情より「できるかできないか」。笑いで距離が縮まる。',
+   approach:'冗談から入る。「よろしくお願いします」より「助けてください」が響く。'},
+
+  {id:'p12',cat:'🔨 職人・技術者',name:'村上 浩',age:42,role:'自動車整備士',emoji:'🔧',
+   mbti:'ISTP',element:'earth',hormone:'安定型ホルモン',
+   trait:'車への愛情深い・客を見る目が鋭い・騙そうとする客はすぐわかる',
+   sync:0,phase:1,
+   situations:['車検・修理依頼','追加修理相談','費用確認','信頼構築'],
+   brain:'観察力が高い。嘘や虚勢はすぐ見抜く。正直さで信頼が爆発的に上がる。',
+   approach:'素直に「よくわからないので教えてください」が最強。知ったかぶりはNG。'},
+
+  {id:'p13',cat:'🔨 職人・技術者',name:'浜田 守',age:62,role:'庭師・造園職人',emoji:'🌿',
+   mbti:'ISFP',element:'earth',hormone:'高セロトニン・高オキシトシン',
+   trait:'自然と対話・穏やか・急かされると全てが崩れる・美意識高い',
+   sync:0,phase:1,
+   situations:['庭の設計相談','追加作業','仕上がり確認','長期契約'],
+   brain:'右脳優位。美的判断が先。時間軸が長い。急かすと扁桃体警戒が上がる。',
+   approach:'時間をかけて相手のペースに合わせる。「センスが素晴らしい」が効く。'},
+
+  /* ── 家族・親族 ── */
+  {id:'p14',cat:'👨‍👩‍👧 家族・親族',name:'義父（田辺 宏）',age:65,role:'義理の父・元サラリーマン',emoji:'👴',
+   mbti:'ESTJ',element:'earth',hormone:'低テストステロン・高コルチゾール（加齢）',
+   trait:'昭和価値観・プライド高い・息子のように扱われたい・でも本音は感謝したい',
+   sync:0,phase:1,
+   situations:['初対面挨拶','帰省','相談事','老後の話'],
+   brain:'加齢で前頭前皮質の柔軟性低下。変化への抵抗。承認欲求が人生最大の動機。',
+   approach:'「教えてください」「さすがです」が最強。絶対に言い負かさない。'},
+
+  {id:'p15',cat:'👨‍👩‍👧 家族・親族',name:'義母（田辺 幸子）',age:62,role:'義理の母・専業主婦',emoji:'👵',
+   mbti:'ESFJ',element:'water',hormone:'高オキシトシン・低エストロゲン（更年期後）',
+   trait:'家族への愛情深い・嫉妬心強い・息子を奪われた感覚・でも認められたい',
+   sync:0,phase:1,
+   situations:['初対面','帰省','料理を褒める','孫の話'],
+   brain:'オキシトシン×承認欲求が全ての判断基準。嫉妬は扁桃体の過活動から。',
+   approach:'料理を必ず褒める。「〇〇さんに似ています」が最強。息子の話を引き出す。'},
+
+  {id:'p16',cat:'👨‍👩‍👧 家族・親族',name:'年上の親戚（叔父）',age:70,role:'地方の有力者・農家',emoji:'🌾',
+   mbti:'ISTJ',element:'earth',hormone:'高セロトニン（安定）',
+   trait:'土地の話が好き・政治の話が好き・若者を試す・でも応援したい',
+   sync:0,phase:1,
+   situations:['帰省の挨拶','お願い事','食事会','農業の話'],
+   brain:'長期記憶と経験則で判断。新しい情報より「人としての誠実さ」を見る。',
+   approach:'まず傾聴。地元の話・農業の話を聞く。直接お願いより「ご意見を聞かせてください」。'},
+
+  /* ── 地域・近隣 ── */
+  {id:'p17',cat:'🏘️ 地域・近隣',name:'山本 隆夫',age:72,role:'自治会長',emoji:'🏘️',
+   mbti:'ESTJ',element:'earth',hormone:'高セロトニン・低テストステロン',
+   trait:'地域への責任感強い・古参意識高い・新参者には厳しい・礼儀を重視',
+   sync:0,phase:1,
+   situations:['挨拶回り','地域行事参加','ゴミ問題','騒音クレーム'],
+   brain:'社会的地位の認知が承認欲求を満たす。礼節が「仲間か敵か」の判断基準。',
+   approach:'まず丁寧な挨拶と手土産。「地域のことを教えてください」が最速の信頼構築。'},
+
+  {id:'p18',cat:'🏘️ 地域・近隣',name:'石田 典子',age:55,role:'世話焼きの近所のおばさん',emoji:'🏠',
+   mbti:'ESFJ',element:'water',hormone:'高オキシトシン・中セロトニン',
+   trait:'噂好き・情報収集家・一度仲良くなると最強の味方・孤独感が強い',
+   sync:0,phase:1,
+   situations:['引越し挨拶','立ち話','お裾分け','地域情報収集'],
+   brain:'オキシトシンと社会的繋がりが全て。情報は「つながり」の代替物。',
+   approach:'お菓子を持って行く。近所の話を聞く。定期的に声をかける継続が重要。'},
+
+  {id:'p19',cat:'🏘️ 地域・近隣',name:'伊藤 清',age:45,role:'クレーマー気質の隣人',emoji:'😤',
+   mbti:'ISTJ',element:'fire',hormone:'高コルチゾール・高テストステロン',
+   trait:'権利意識高い・細かい・一度怒ると長い・でも正当な対応には従う',
+   sync:0,phase:1,
+   situations:['騒音問題','駐車トラブル','境界線問題','クレーム対応'],
+   brain:'コルチゾール高値で扁桃体が過反応。「自分の権利が守られているか」が常に最優先。',
+   approach:'まず謝罪・傾聴。絶対に言い訳しない。具体的な対応策を即提示。'},
+
+  /* ── お世話になる専門家 ── */
+  {id:'p20',cat:'🏥 お世話になる専門家',name:'佐々木 真司',age:50,role:'かかりつけ医',emoji:'🩺',
+   mbti:'INFJ',element:'water',hormone:'高BDNF・高セロトニン',
+   trait:'患者思い・傾聴力高い・だが忙しい・的確な情報を欲しがる',
+   sync:0,phase:1,
+   situations:['定期検診','急病相談','薬の相談','紹介状依頼'],
+   brain:'共感回路と論理回路が統合。的確な情報提供で診断精度が上がる。',
+   approach:'症状を時系列で整理して話す。「先生を信頼して全て話します」が最強。'},
+
+  {id:'p21',cat:'🏥 お世話になる専門家',name:'吉野 幸平',age:44,role:'銀行融資担当',emoji:'🏦',
+   mbti:'ISTJ',element:'earth',hormone:'高コルチゾール（責任プレッシャー）',
+   trait:'リスク管理最優先・数字の信頼性を見る・人柄より実績・慎重',
+   sync:0,phase:1,
+   situations:['融資相談','事業計画提出','返済交渉','口座開設'],
+   brain:'前頭前皮質が支配。感情的訴えは逆効果。数字の整合性が全て。',
+   approach:'事業計画書を完璧に。返済計画を具体的に。「最悪のシナリオ」も用意する。'},
+
+  {id:'p22',cat:'🏥 お世話になる専門家',name:'川口 美智子',age:40,role:'学校の先生（子供担任）',emoji:'👩‍🏫',
+   mbti:'ENFJ',element:'fire',hormone:'高オキシトシン・高セロトニン',
+   trait:'子供思い・保護者との連携重視・クレームには傷つく・感謝に弱い',
+   sync:0,phase:1,
+   situations:['面談','連絡帳','問題行動相談','学校行事'],
+   brain:'オキシトシン型。「子供のため」という共通目標でつながると同期が高まる。',
+   approach:'まず感謝から。「先生のおかげで子供が〜」が最強。クレームは最後に。'},
+
+  /* ── 飲食・サービス業 ── */
+  {id:'p23',cat:'🍜 飲食・サービス業',name:'大野 太郎',age:38,role:'行きつけの店主（ラーメン屋）',emoji:'🍜',
+   mbti:'ISTP',element:'fire',hormone:'高テストステロン・高セロトニン',
+   trait:'職人気質・常連客を大切に・媚びを嫌う・本音で話せる関係を求める',
+   sync:0,phase:1,
+   situations:['初来店','常連化','深夜トーク','仕事相談'],
+   brain:'感覚型。「本物か偽物か」を瞬時に判断する。作った感は即座に見抜く。',
+   approach:'正直に「美味しい」と言う。わからないことは聞く。継続的に通うことが最重要。'},
+
+  {id:'p24',cat:'🍜 飲食・サービス業',name:'藤井 幸子',age:52,role:'スナックのママ',emoji:'🍷',
+   mbti:'ESFP',element:'water',hormone:'高オキシトシン・高セロトニン',
+   trait:'人生経験豊富・包容力最大・本音を引き出す・人の裏を読む達人',
+   sync:0,phase:1,
+   situations:['初来店','愚痴を聞いてもらう','仕事相談','人脈紹介'],
+   brain:'オキシトシン×人生経験。感情の読み取りが超高精度。弱みを見せると信頼が深まる。',
+   approach:'本音を話す。弱みを見せる。「どう思いますか？」と意見を求める。'},
+
+  /* ── 難敵・難しい人 ── */
+  {id:'p25',cat:'⚠️ 難敵・難しい人',name:'木村 克彦',age:50,role:'ハードネゴシエーター',emoji:'😤',
+   mbti:'ENTJ',element:'fire',hormone:'高テストステロン・高コルチゾール',
+   trait:'最初から全力否定・揚げ足取り・弱みを見せたら終わり・実は孤独',
+   sync:0,phase:1,
+   situations:['初回交渉','価格攻防','条件変更','関係修復'],
+   brain:'高テストステロンと高コルチゾールの組み合わせが最凶。支配欲と不安が同時に存在。',
+   approach:'絶対に動じない。事実だけで話す。一度だけ「面白い視点ですね」と認める。'},
+
+  {id:'p26',cat:'⚠️ 難敵・難しい人',name:'野口 幸雄',age:55,role:'サイレントキラー（何も言わない人）',emoji:'🤐',
+   mbti:'INTJ',element:'water',hormone:'低オキシトシン・高BDNF',
+   trait:'表情が読めない・返事がない・実は全部わかっている・沈黙が武器',
+   sync:0,phase:1,
+   situations:['提案プレゼン','承認会議','意見収集','一対一面談'],
+   brain:'内向型の最大版。内部処理が全て完結している。沈黙は拒絶ではなく処理中。',
+   approach:'沈黙を埋めない。「どう思われますか？」と聞いて待つ。急かすと全て終わる。'},
+
+  {id:'p27',cat:'⚠️ 難敵・難しい人',name:'三浦 敏子',age:48,role:'マウント女性上司',emoji:'👩‍💼',
+   mbti:'ESTJ',element:'fire',hormone:'高コルチゾール・高テストステロン',
+   trait:'自分の経験を全てに当てはめる・部下を試す・褒められたい・本当は傷つきやすい',
+   sync:0,phase:1,
+   situations:['日常報告','企画提案','ミス後の対応','ランチ誘い'],
+   brain:'承認欲求とコルチゾールが共存。「尊重されているか」を常にモニタリングしている。',
+   approach:'まず「さすがです」。自分の意見を通したい時は「先輩のご意見を聞かせてください」から。'},
+
+  /* ── その他・人生の登場人物 ── */
+  {id:'p28',cat:'🌏 その他・人生の人',name:'坂田 光一',age:35,role:'昔の同僚（起業家）',emoji:'🚀',
+   mbti:'ENTP',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'アイデア無限・実行力もある・競争心強い・同期への嫉妬と応援が混在',
+   sync:0,phase:1,
+   situations:['久しぶりの再会','ビジネス相談','コラボ提案','愚痴'],
+   brain:'ドーパミン回路が常に活性。新奇性への反応が最大。競争意識が動機。',
+   approach:'相手の成功を素直に認める。「一緒にやりたい」より「アドバイスが欲しい」から入る。'},
+
+  {id:'p29',cat:'🌏 その他・人生の人',name:'林 勉',age:68,role:'人生の師匠・元上司',emoji:'🧘',
+   mbti:'INFJ',element:'water',hormone:'高セロトニン・高BDNF（知的老化予防）',
+   trait:'深い洞察・急がない・問いで導く・結論を言わない・自分で気づかせる',
+   sync:0,phase:1,
+   situations:['人生相談','仕事の壁','人間関係悩み','定期的な食事'],
+   brain:'結晶性知能が最大化。前頭前皮質の感情統合が完成。「待つ」ことができる。',
+   approach:'準備して会う。メモを持参。「○○について考えていますが」と問題提起から。'},
+
+  {id:'p30',cat:'🌏 その他・人生の人',name:'永田 俊介',age:30,role:'年下の後輩（伸び盛り）',emoji:'⚡',
+   mbti:'ENFP',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'素直・吸収力最大・褒められると無限に動く・でも放置すると迷走',
+   sync:0,phase:1,
+   situations:['指導・教育','ミス対応','モチベーション管理','将来の相談'],
+   brain:'ドーパミン感受性が高い。承認→行動の回路が強い。失敗への罰より成功への報酬が効く。',
+   approach:'具体的に褒める。失敗は一緒に考える。「どうしたいか」を先に聞く。'},
+
+  {id:'p31',cat:'🌏 その他・人生の人',name:'藤原 朋子',age:45,role:'PTAのボス的存在',emoji:'👩',
+   mbti:'ESFJ',element:'water',hormone:'高オキシトシン・中コルチゾール',
+   trait:'ネットワーク最強・情報収集家・仲間外れを作る・でも認めた人は守る',
+   sync:0,phase:1,
+   situations:['PTA会議','学校行事','情報収集','派閥調整'],
+   brain:'社会的帰属欲求が最大の動機。「内側か外側か」の二元論で世界を見る。',
+   approach:'まず懐に入る。役に立つ情報を提供する。批判は絶対にしない。'},
+
+  {id:'p32',cat:'🌏 その他・人生の人',name:'加藤 浩市',age:40,role:'ジムのトレーナー',emoji:'💪',
+   mbti:'ESTP',element:'fire',hormone:'高テストステロン・高セロトニン',
+   trait:'体育会系・正直・成長を見ると喜ぶ・やらない人には辛辣',
+   sync:0,phase:1,
+   situations:['トレーニング指導','食事相談','モチベーション','目標設定'],
+   brain:'行動優先の外向型。「言葉より結果」。継続する人への信頼が爆発的に高まる。',
+   approach:'有言実行。できなかった時は正直に言う。「教えてください」より「やります」が先。'},
+
+  {id:'p33',cat:'🌏 その他・人生の人',name:'中田 英雄',age:60,role:'地元の政治家（市議）',emoji:'🏛️',
+   mbti:'ENTJ',element:'fire',hormone:'高テストステロン・高ドーパミン（権力動機）',
+   trait:'支持者を増やすことが全て・聞き上手の演技・本音は見せない・地元愛は本物',
+   sync:0,phase:1,
+   situations:['陳情','地域問題相談','選挙応援依頼','パーティー'],
+   brain:'ドーパミン×テストステロンが権力への動機。「有権者が喜ぶか」が唯一の基準。',
+   approach:'地元の問題を具体的に持っていく。「地域のために」を軸に話す。'},
+
+  {id:'p34',cat:'🌏 その他・人生の人',name:'岩田 清子',age:75,role:'近所の知恵袋おばあちゃん',emoji:'👵',
+   mbti:'ISFJ',element:'earth',hormone:'高セロトニン・高オキシトシン',
+   trait:'人生経験の塊・孤独感がある・若者に頼られると輝く・本当のことを教えてくれる',
+   sync:0,phase:1,
+   situations:['立ち話','人生相談','地域の歴史','助けを求める'],
+   brain:'結晶性知能と経験則が最大化。社会的繋がりがBDNFを産生。必要とされることが生きがい。',
+   approach:'定期的に訪問。話を聞く。「教えてください」が最強。お礼は言葉でしっかり。'},
+
+  /* ── 取引先企業 ── */
+  {id:'p35',cat:'🏢 取引先企業',name:'堀内 達也',age:52,role:'元請け企業の発注担当部長',emoji:'🏢',
+   mbti:'ESTJ',element:'earth',hormone:'高コルチゾール・中テストステロン',
+   trait:'コスト×品質×納期の三拍子命・下請けを値切るのが仕事・義理堅い一面もある',
+   sync:0,phase:1,
+   situations:['新規取引交渉','価格見直し','品質クレーム','年度契約更新'],
+   brain:'前頭前皮質が支配。損失回避が最大動機。「リスクを減らせるか」が唯一の判断基準。',
+   approach:'実績・品質保証・納期厳守を数字で示す。「御社のリスクを○%下げます」から入る。'},
+
+  {id:'p36',cat:'🏢 取引先企業',name:'安田 修平',age:38,role:'仕入先メーカーの営業マン',emoji:'🏭',
+   mbti:'ESFJ',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'数字へのプレッシャーが強い・関係構築でカバーしようとする・情に訴えがち',
+   sync:0,phase:1,
+   situations:['新製品提案','価格交渉','納期調整','在庫確認'],
+   brain:'ドーパミン回路が「受注」で発火。コルチゾールが背景にある。感情的な絆に頼る傾向。',
+   approach:'まず相手の数字プレッシャーを理解する。「一緒に達成しましょう」が刺さる。'},
+
+  {id:'p37',cat:'🏢 取引先企業',name:'菊地 隆',age:60,role:'下請け業者の社長',emoji:'🔩',
+   mbti:'ISTP',element:'earth',hormone:'高セロトニン・低コルチゾール（安定）',
+   trait:'技術には絶対の自信・値切りは命より嫌い・長年の信頼関係を最重視',
+   sync:0,phase:1,
+   situations:['発注依頼','仕様変更','単価交渉','緊急対応'],
+   brain:'職人的感覚型。「仕事の質」が自己価値の全て。値切り＝人格否定に等しい。',
+   approach:'まず技術を褒める。「適正価格でお願いしたい」と正直に言う。長期契約をちらつかせる。'},
+
+  {id:'p38',cat:'🏢 取引先企業',name:'伊藤 健太',age:33,role:'商社の調達バイヤー',emoji:'📦',
+   mbti:'ENTJ',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'複数社を常に比較・スペックと価格の比較表を常に持っている・感情より効率',
+   sync:0,phase:1,
+   situations:['見積提出','仕様説明','競合比較','納期短縮依頼'],
+   brain:'前頭前皮質主導。ドーパミンが「最適解を見つけた」瞬間に発火。感情は邪魔と考えている。',
+   approach:'比較表に勝てるスペック差別化を1点用意する。「他社にはできないこと」を先に言う。'},
+
+  {id:'p39',cat:'🏢 取引先企業',name:'山下 恵子',age:44,role:'ITベンダーの提案担当',emoji:'💻',
+   mbti:'INFJ',element:'water',hormone:'高BDNF・中オキシトシン',
+   trait:'技術は深い・でも顧客の業務理解が強み・長期パートナーシップを求める',
+   sync:0,phase:1,
+   situations:['システム提案','要件定義','追加開発交渉','保守契約更新'],
+   brain:'共感と論理の統合型。「この顧客のために」が最大の動機。長期関係に最もコミットする。',
+   approach:'業務課題を深く話す。「あなたに任せたい」が最も効く。スペックより課題解決を語る。'},
+
+  {id:'p40',cat:'🏢 取引先企業',name:'前田 浩之',age:48,role:'競合他社の営業マン',emoji:'⚔️',
+   mbti:'ENTP',element:'fire',hormone:'高テストステロン・高ドーパミン',
+   trait:'情報収集が目的・雑談の中に探りを入れる・同業者として尊重し合える関係も',
+   sync:0,phase:1,
+   situations:['業界イベントでの遭遇','情報交換','業界団体','転職時の接触'],
+   brain:'ドーパミン型の探索者。競争と協調が同居。情報の価値を本能的に理解する。',
+   approach:'情報は与えて情報を得る。「業界全体が良くなれば」という共通軸で話す。'},
+
+  {id:'p41',cat:'🏢 取引先企業',name:'岸本 誠',age:55,role:'老舗取引先の二代目社長',emoji:'🎌',
+   mbti:'ISFJ',element:'earth',hormone:'高セロトニン・中オキシトシン',
+   trait:'先代からの義理を重んじる・変化を嫌う・でも廃業への危機感は持っている',
+   sync:0,phase:1,
+   situations:['挨拶訪問','新提案','関係維持','緊急相談'],
+   brain:'セロトニン型の安定志向。変化は脅威だが孤立への不安も強い。「継続」が最大の安心。',
+   approach:'先代との関係から話す。「変えない」ことを強調しながら小さな改善を提案する。'},
+
+  {id:'p42',cat:'🏢 取引先企業',name:'辻 彩香',age:29,role:'スタートアップの調達担当',emoji:'🚀',
+   mbti:'ENFP',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'スピード命・決断が速い・予算は少ない・成長に乗れるパートナーを探している',
+   sync:0,phase:1,
+   situations:['初回提案','スピード見積','小ロット交渉','成長に合わせた拡大提案'],
+   brain:'ドーパミン感受性が最高値。新奇性×成長×スピードで発火。大企業の遅さを嫌う。',
+   approach:'レスポンスを爆速にする。「一緒に成長したい」が最強。柔軟性をアピールする。'},
+
+  /* ── 追加の人生キャラ ── */
+  {id:'p43',cat:'🌏 その他・人生の人',name:'長谷川 亮',age:36,role:'転職エージェント',emoji:'💼',
+   mbti:'ESFJ',element:'wind',hormone:'高ドーパミン・高オキシトシン',
+   trait:'表向き親切・本音は成約報酬・良い人材は手放さない・情報は武器',
+   sync:0,phase:1,
+   situations:['キャリア相談','求人紹介','面接対策','条件交渉代行'],
+   brain:'オキシトシンと報酬回路が共存。「あなたのため」と「自分の数字」が同時に動く。',
+   approach:'自分の市場価値を正確に把握してから会う。情報は与えすぎない。複数社を使う。'},
+
+  {id:'p44',cat:'🌏 その他・人生の人',name:'遠藤 隆史',age:42,role:'不動産仲介業者',emoji:'🏠',
+   mbti:'ESTP',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'トーク巧み・早期成約が命・良い物件は持ってくる・でも急かしてくる',
+   sync:0,phase:1,
+   situations:['物件案内','価格交渉','契約条件確認','リフォーム提案'],
+   brain:'テストステロン×ドーパミンが成約に向かう。「今決めないと」が最大の武器。',
+   approach:'急かされても動じない。「もう1週間考えます」と言える準備をして臨む。'},
+
+  {id:'p45',cat:'🌏 その他・人生の人',name:'青山 健一',age:38,role:'保険営業（トップセールス）',emoji:'🛡️',
+   mbti:'ESFJ',element:'water',hormone:'高オキシトシン・高ドーパミン',
+   trait:'関係構築の天才・断れない雰囲気を作る・本当に役立つ情報も持っている',
+   sync:0,phase:1,
+   situations:['保険見直し相談','新規提案','追加契約','紹介依頼'],
+   brain:'オキシトシンで関係を作りドーパミンで成約に持ち込む。感情の流れを設計している。',
+   approach:'感情に流されない。必要な保障を事前に整理してから会う。断る練習をする。'},
+
+  {id:'p46',cat:'🌏 その他・人生の人',name:'本田 真一',age:50,role:'独立した個人コンサルタント',emoji:'🎯',
+   mbti:'INTJ',element:'earth',hormone:'高BDNF・低コルチゾール',
+   trait:'知識は本物・プライドが高い・成果にコミットする・雑談が苦手',
+   sync:0,phase:1,
+   situations:['初回相談','契約交渉','成果確認','継続依頼'],
+   brain:'前頭前皮質が主導。BDNF高値で思考が深い。「成果で語れ」が唯一の評価基準。',
+   approach:'課題を明確に定義してから会う。「結果で判断したい」という姿勢を見せる。'},
+
+  {id:'p47',cat:'🌏 その他・人生の人',name:'渡辺 幸太',age:25,role:'SNSインフルエンサー（仕事依頼先）',emoji:'📱',
+   mbti:'ENFP',element:'fire',hormone:'高ドーパミン・高テストステロン',
+   trait:'承認欲求が全て・数字（フォロワー）が自己価値・コラボに飢えている・飽きっぽい',
+   sync:0,phase:1,
+   situations:['PR依頼','コラボ提案','報酬交渉','継続契約'],
+   brain:'ドーパミン感受性最高値。承認×新奇性×数字で動く。飽きたら即離脱する。',
+   approach:'フォロワーへのメリットを先に語る。承認を与えてから依頼する。長期より短期提案。'},
+
+  {id:'p48',cat:'🌏 その他・人生の人',name:'片山 信夫',age:58,role:'地元の有力OB（元支店長）',emoji:'🎖️',
+   mbti:'ESTJ',element:'earth',hormone:'低テストステロン・高セロトニン（引退後安定）',
+   trait:'人脈が命・情報通・紹介で動く世界・若者の面倒を見るのが生きがい',
+   sync:0,phase:1,
+   situations:['挨拶','紹介依頼','情報収集','食事会'],
+   brain:'セロトニン安定型。「必要とされること」がドーパミン産生源。人脈は最大の資産。',
+   approach:'定期的に近況報告する。「ご紹介いただけますか」より「ご意見を聞かせてください」から。'},
+
+  {id:'p49',cat:'🌏 その他・人生の人',name:'井上 茂樹',age:44,role:'同業の先輩経営者',emoji:'👑',
+   mbti:'ENTJ',element:'fire',hormone:'高テストステロン・中セロトニン',
+   trait:'成功体験が強い・アドバイスしたがる・でも本音は孤独・対等な対話を求めている',
+   sync:0,phase:1,
+   situations:['経営相談','業界情報交換','愚痴','コラボ提案'],
+   brain:'テストステロンが成功体験を強化。孤独感がオキシトシン欠乏を生む。対等な承認を求める。',
+   approach:'成功を素直に認める。「教えてください」より「どう思いますか」の対等な問いが効く。'},
+
+  {id:'p50',cat:'🌏 その他・人生の人',name:'花田 律子',age:35,role:'副業仲間・コミュニティリーダー',emoji:'🌟',
+   mbti:'ENFJ',element:'fire',hormone:'高オキシトシン・高セロトニン',
+   trait:'人を繋げるのが得意・コミュニティの調和を最優先・でも実力者には頼る',
+   sync:0,phase:1,
+   situations:['コミュニティ参加','共同企画','人脈紹介','モチベーション維持'],
+   brain:'オキシトシン型リーダー。「全員が幸せか」が判断軸。個人の利益より集合利益を優先。',
+   approach:'コミュニティへの貢献を先に示す。「みんなに役立つ」という文脈で提案する。'},
+];
+
+/* ══ PEOPLE STATE管理 ══ */
+let currentPerson = null;
+let scHistory = [];
+let scSyncScore = 0;
+
+/* カテゴリ一覧 */
+const PCATS = [...new Set(PEOPLE.map(p=>p.cat))];
+
+/* フェーズ定義 */
+const PHASES = [
+  {n:1,label:'初対面',emoji:'👋',color:'var(--txt3)',
+   desc:'脳間同期0%・警戒レベル高・ミラーリング開始'},
+  {n:2,label:'接触期',emoji:'🤝',color:'var(--morphe)',
+   desc:'呼吸同期開始・オキシトシン上昇・本音が少し出る'},
+  {n:3,label:'信頼期',emoji:'💙',color:'var(--pneuma)',
+   desc:'脳間同期60%以上・感情共鳴・協力的態度'},
+  {n:4,label:'同盟期',emoji:'🔥',color:'var(--logos)',
+   desc:'脳間同期80%以上・長期パートナー・本音全開'},
+];
+
+
+/* ══ PEOPLE 初期化 ══ */
+
+function initLifeZero(){
+  renderLZTheory();
+}
+
+function renderLZTheory(){
+  var el=document.getElementById('lz-theory');
+  if(!el||el._init)return;el._init=true;
+  var d=LIFE_ZERO_DATA;
+  var html='<div style="padding:.7rem .85rem">';
+  html+='<div style="background:linear-gradient(135deg,rgba(37,99,235,.1),rgba(217,119,6,.1));border:1px solid rgba(37,99,235,.2);border-radius:14px;padding:.85rem;margin-bottom:.6rem">';
+  html+='<div style="font-size:.58rem;font-weight:700;color:var(--morphe);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.2rem">CORE THEORY</div>';
+  html+='<div style="font-family:var(--fd);font-size:.73rem;color:var(--txt);line-height:1.78">'+d.core+'</div></div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem">';
+  d.axes.forEach(function(a){
+    html+='<div data-lz="axes" onclick="switchTab(\'lifezero\',this.dataset.lz,null)" style="background:var(--sur);border:1px solid var(--bor);border-left:4px solid '+a.color+';border-radius:0 10px 10px 0;padding:.6rem .7rem;cursor:pointer">';
+    html+='<div style="font-size:1rem;margin-bottom:.1rem">'+a.emoji+'</div>';
+    html+='<div style="font-size:.7rem;font-weight:700;color:'+a.color+'">'+a.title+'</div></div>';
+  });
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+
+function initLZAxes(){
+  var el=document.getElementById('lz-axes');
+  if(!el||el._init)return;el._init=true;
+  var html='<div style="padding:.7rem .85rem">';
+  LIFE_ZERO_DATA.axes.forEach(function(a){
+    html+='<div style="background:var(--sur);border:1px solid var(--bor);border-left:4px solid '+a.color+';border-radius:0 12px 12px 0;padding:.75rem .85rem;margin-bottom:.45rem">';
+    html+='<div style="font-size:.7rem;font-weight:700;color:'+a.color+';margin-bottom:.2rem">'+a.emoji+' '+a.title+'</div>';
+    html+='<div style="font-size:.66rem;color:var(--txt2);line-height:1.68;margin-bottom:.3rem">'+a.desc+'</div>';
+    html+='<div style="font-size:.6rem;color:var(--txt3);padding:.3rem .5rem;background:rgba(0,0,0,.04);border-radius:6px">🔬 '+a.science+'</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function initLZProtocol(){
+  var el=document.getElementById('lz-protocol');
+  if(!el||el._init)return;el._init=true;
+  var html='<div style="padding:.7rem .85rem">';
+  LIFE_ZERO_DATA.protocol.forEach(function(p){
+    html+='<div style="background:var(--sur);border:1px solid var(--bor);border-radius:12px;padding:.75rem .85rem;margin-bottom:.45rem">';
+    html+='<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem">';
+    html+='<div style="width:24px;height:24px;border-radius:50%;background:var(--morphe);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700">'+p.step+'</div>';
+    html+='<div style="font-family:var(--fd);font-size:.82rem;font-weight:700;color:var(--txt)">'+p.title+'</div>';
+    html+='<div style="margin-left:auto;font-size:.58rem;color:var(--txt3)">⏱ '+p.time+'</div></div>';
+    html+='<div style="font-size:.67rem;color:var(--txt2);line-height:1.65">'+p.action+'</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+var lzAIHistory=[];
+async function sendLifeZeroAI(){
+  var inp=document.getElementById('lz-ai-inp');
+  var msgs=document.getElementById('lz-ai-msgs');
+  var text=(inp&&inp.value||'').trim();
+  if(!text)return;
+  inp.value='';
+  var safe=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  msgs.innerHTML+='<div class="msg user"><div class="msg-bubble">'+safe+'</div></div>';
+  lzAIHistory.push({role:'user',content:text});
+  msgs.innerHTML+='<div class="msg ai" id="lz-typing"><div class="msg-bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div></div>';
+  msgs.scrollTop=msgs.scrollHeight;
+  var sys='あなたはLIFE ZERO理論の世界最高峰の専門家AIです。執着ゼロ×コルチゾールゼロ×プロセス没入の理論を仕事・人間関係・成長の全局面に適用するアドバイスをしてください。科学的根拠と具体的実践を含める。150〜200字。';
+  var history=lzAIHistory.slice(-4).map(function(m){return(m.role==='user'?'ユーザー':'AI')+': '+m.content;}).join('\n');
+  var reply=await callGemini(sys,history,600);
+  var t=document.getElementById('lz-typing');if(t)t.remove();
+  var safeReply=reply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  msgs.innerHTML+='<div class="msg ai"><div class="msg-bubble">'+safeReply+'</div></div>';
+  msgs.scrollTop=msgs.scrollHeight;
+  lzAIHistory.push({role:'assistant',content:reply});
+}
+
+
+
+function initCouncil(){
+  renderCouncilAIBar();
+  renderCouncilQuick();
+  if(!document.getElementById('council-msgs').children.length){
+    document.getElementById('council-msgs').innerHTML=
+      '<div style="padding:1.5rem;text-align:center">'
+      +'<div style="font-size:2rem;margin-bottom:.4rem">👥</div>'
+      +'<div style="font-family:var(--fd);font-size:.95rem;font-weight:700;color:var(--morphe);margin-bottom:.3rem">LIFE COUNCIL</div>'
+      +'<div style="font-size:.65rem;color:var(--txt3);line-height:1.7">5人の世界最高峰の専門家AIが<br>あなたの人生課題に同時回答します</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:.3rem;justify-content:center;margin-top:.6rem">'
+      +Object.values(LIFE_COUNCIL_AIS).map(function(ai){
+        return'<div style="padding:.28rem .55rem;border-radius:999px;background:'+ai.color+'15;border:1px solid '+ai.color+'30;font-size:.58rem;font-weight:700;color:'+ai.color+'">'+ai.emoji+' '+ai.name+'</div>';
+      }).join('')
+      +'</div></div>';
+  }
+}
+
+function renderCouncilAIBar(){
+  var bar=document.getElementById('council-ai-bar');
+  if(!bar||bar._init)return;bar._init=true;
+  var html='<button onclick="setCouncilAI(null,this)" class="cai-btn" style="flex-shrink:0;padding:.25rem .55rem;border-radius:999px;border:1.5px solid var(--morphe);background:rgba(37,99,235,.15);font-size:.58rem;font-weight:700;color:var(--morphe);cursor:pointer">🤖 AUTO</button>';
+  Object.values(LIFE_COUNCIL_AIS).forEach(function(ai){
+    html+='<button onclick="setCouncilAI(this.dataset.id,this)" class="cai-btn" data-id="'+ai.id+'" style="flex-shrink:0;padding:.25rem .55rem;border-radius:999px;border:1.5px solid var(--bor);background:var(--sur);font-size:.58rem;font-weight:600;color:var(--txt2);cursor:pointer">'+ai.emoji+' '+ai.name+'</button>';
+  });
+  bar.innerHTML=html;
+}
+
+function setCouncilAI(id,btn){
+  councilSelAI=id;
+  document.querySelectorAll('.cai-btn').forEach(function(b){
+    b.style.borderColor='var(--bor)';b.style.background='var(--sur)';b.style.color='var(--txt2)';
+  });
+  if(btn){
+    var col=id?LIFE_COUNCIL_AIS[id].color:'var(--morphe)';
+    btn.style.borderColor=col;btn.style.background=col+'20';btn.style.color=col;
+  }
+  if(id&&LIFE_COUNCIL_AIS[id]){
+    var bar=document.getElementById('council-quick-bar');
+    if(bar)bar.innerHTML=LIFE_COUNCIL_AIS[id].quick.map(function(q,idx){
+      return'<button onclick="councilQuickIdx(parseInt(this.dataset.idx))" data-idx="'+idx+'" style="flex-shrink:0;padding:.22rem .48rem;border-radius:999px;border:1px solid var(--bor);background:var(--sur);font-size:.55rem;color:var(--txt2);cursor:pointer;white-space:nowrap">'+q+'</button>';
+    }).join('');
+  }
+}
+
+function renderCouncilQuick(){
+  var bar=document.getElementById('council-quick-bar');
+  if(!bar)return;
+  var qs=['今の状況を診断して','仕事の課題を相談','交渉前の準備は？','習慣を変えたい','今週の最重要アクションは？'];
+  bar.innerHTML=qs.map(function(q,idx){
+      return'<button onclick="councilQuickIdx(parseInt(this.dataset.idx))" data-idx="'+idx+'" style="flex-shrink:0;padding:.22rem .48rem;border-radius:999px;border:1px solid var(--bor);background:var(--sur);font-size:.55rem;color:var(--txt2);cursor:pointer;white-space:nowrap">'+q+'</button>';
+  }).join('');
+}
+
+function councilQuick(q,event){
+  var inp=document.getElementById('council-inp');
+  if(inp)inp.value=q;
+  sendCouncil();
+}
+function councilQuickIdx(idx){
+  var qs=document.getElementById('council-quick-bar').querySelectorAll('button');
+  if(qs[idx])councilQuick(qs[idx].textContent,null);
+}
+
+
+function addCouncilMsg(type,text,ai){
+  var msgs=document.getElementById('council-msgs');
+  if(!msgs)return;
+  var div=document.createElement('div');
+  var safe=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  if(type==='user'){
+    div.className='msg user';
+    div.innerHTML='<div class="msg-bubble">'+safe+'</div>';
+  }else if(type==='ai'&&ai){
+    div.className='msg ai';
+    div.innerHTML='<div style="font-size:.55rem;color:'+ai.color+';font-weight:700;margin-bottom:.1rem">'+ai.emoji+' '+ai.name+'</div>'
+      +'<div class="msg-bubble" style="border-left:3px solid '+ai.color+'30">'+safe+'</div>';
+  }else if(type==='summary'){
+    div.innerHTML='<div style="margin:.2rem 0;padding:.6rem .8rem;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(124,58,237,.08));border:1px solid rgba(37,99,235,.2);border-radius:10px;font-size:.68rem;color:var(--txt);line-height:1.7"><div style="font-size:.55rem;font-weight:700;color:var(--morphe);margin-bottom:.1rem">⚡ 統合レポート</div>'+safe+'</div>';
+  }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+var councilRouterSys='あなたはLIFE COUNCILの司令塔AIです。ユーザーの質問を読んで最適な専門家1〜2人をJSONで返してください。専門家：director/business/inner/psyche/growth。必ず{"experts":["id1"],"reason":"理由10字以内"}のJSONのみ返してください。';
+
+async function sendCouncil(){
+  if(councilSending)return;
+  var inp=document.getElementById('council-inp');
+  var btn=document.getElementById('council-send-btn');
+  var text=(inp&&inp.value||'').trim();
+  if(!text)return;
+  councilSending=true;
+  if(inp)inp.value='';if(inp)inp.style.height='auto';
+  if(btn)btn.disabled=true;
+  var msgs=document.getElementById('council-msgs');
+  // ウェルカム画面を消す
+  if(msgs&&msgs.children.length===1&&msgs.children[0].style.textAlign==='center')msgs.innerHTML='';
+  addCouncilMsg('user',text,null);
+  councilHistory.push({role:'user',content:text});
+
+  try{
+    var experts=[];
+    if(councilSelAI){
+      experts=[councilSelAI];
+    }else{
+      var routeRaw=await callGemini(councilRouterSys,text,200);
+      try{
+        var route=JSON.parse(routeRaw.replace(/```(?:json)?/g,'').trim());
+        experts=route.experts||['director'];
+      }catch(e){experts=['director'];}
+    }
+
+    var responses=[];
+    for(var i=0;i<experts.length;i++){
+      var ai=LIFE_COUNCIL_AIS[experts[i]];
+      if(!ai)continue;
+      var typId='ctyp'+Date.now()+i;
+      var typDiv=document.createElement('div');
+      typDiv.id=typId;typDiv.className='msg ai';
+      typDiv.innerHTML='<div style="font-size:.55rem;color:'+ai.color+';font-weight:700;margin-bottom:.1rem">'+ai.emoji+' '+ai.name+'</div>'
+        +'<div class="msg-bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>';
+      if(msgs){msgs.appendChild(typDiv);msgs.scrollTop=msgs.scrollHeight;}
+      var history=councilHistory.slice(-6).map(function(m){return(m.role==='user'?'ユーザー':'AI')+': '+m.content;}).join('\n');
+      var reply=await callGemini(ai.system,history+'\nユーザー: '+text,600);
+      var t=document.getElementById(typId);if(t)t.remove();
+      addCouncilMsg('ai',reply,ai);
+      responses.push({ai:ai,reply:reply});
+    }
+
+    if(responses.length>1){
+      var sumTypId='csum'+Date.now();
+      var sumDiv=document.createElement('div');
+      sumDiv.id=sumTypId;
+      sumDiv.innerHTML='<div style="text-align:center;font-size:.6rem;color:var(--txt3);padding:.3rem">⚡ 統合中...</div>';
+      if(msgs){msgs.appendChild(sumDiv);msgs.scrollTop=msgs.scrollHeight;}
+      var sumPrompt=responses.map(function(r){return r.ai.name+': '+r.reply;}).join('\n\n');
+      var summary=await callGemini('複数の専門家の回答を統合して「今すぐできる3つのアクション」にまとめてください。150字以内。',sumPrompt,400);
+      var st=document.getElementById(sumTypId);if(st)st.remove();
+      addCouncilMsg('summary',summary,null);
+    }
+
+    var allReplies=responses.map(function(r){return r.ai.name+': '+r.reply;}).join('\n');
+    councilHistory.push({role:'assistant',content:allReplies});
+    if(councilHistory.length>20)councilHistory=councilHistory.slice(-16);
+  }catch(e){addCouncilMsg('ai','⚠️ エラー: '+e.message,{emoji:'⚠️',name:'ERROR',color:'#ef4444'});}
+  councilSending=false;
+  if(btn)btn.disabled=false;
+}
+
+
+function initPeople(){ renderPeopleList(); }
+
+function renderPeopleList(){
+  const el = document.getElementById('people-list');
+  if(!el||el._init) return; el._init=true;
+  let h = '<div class="pg-hd"><div class="pg-title">👥 人生に登場する34人</div>';
+  h += '<div class="pg-sub">会社・職人・家族・地域・専門家・難敵… あらゆる人間関係を脳科学で攻略する。タップして対話シミュを開始。</div></div>';
+  PCATS.forEach(cat=>{
+    const people = PEOPLE.filter(p=>p.cat===cat);
+    h += `<div style="padding:.5rem .85rem .2rem">
+      <div style="font-size:.6rem;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase">${cat}</div></div>`;
+    people.forEach(p=>{
+      const ph = PHASES[p.phase-1];
+      const syncW = p.sync||0;
+      h += `<div class="card" style="margin:.28rem .85rem;cursor:pointer" onclick="openPerson('${p.id}')">
+        <div style="padding:.62rem .85rem;display:flex;align-items:center;gap:.65rem">
+          <div style="font-size:1.5rem;width:36px;text-align:center">${p.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:.3rem;margin-bottom:.1rem">
+              <span style="font-family:var(--fd);font-size:.9rem;font-weight:600">${p.name}</span>
+              <span style="font-size:.52rem;color:var(--txt3)">${p.age}歳</span>
+            </div>
+            <div style="font-size:.6rem;color:var(--txt2);margin-bottom:.28rem">${p.role}</div>
+            <div style="display:flex;align-items:center;gap:.4rem">
+              <span style="font-size:.54rem;font-weight:700;color:${ph.color}">${ph.emoji} ${ph.label}</span>
+              <div style="flex:1;height:4px;background:var(--bg2);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${syncW}%;background:linear-gradient(90deg,var(--morphe),var(--nous));border-radius:2px;transition:width .6s"></div>
+              </div>
+              <span style="font-size:.52rem;color:var(--txt3)">同期${syncW}%</span>
+            </div>
+          </div>
+          <div style="font-size:.55rem;color:var(--txt3)">▶</div>
+        </div>
+      </div>`;
+    });
+  });
+  h += '<div style="height:.75rem"></div>';
+  el.innerHTML = h;
+}
+
+function openPerson(id){
+  currentPerson = PEOPLE.find(p=>p.id===id);
+  if(!currentPerson) return;
+  scHistory = [];
+  scSyncScore = currentPerson.sync||0;
+  // talkタブに切り替え
+  const page = document.getElementById('pg-people');
+  if(page){
+    page.querySelectorAll('.mod-tab').forEach(b=>b.classList.remove('on'));
+    const tabs = page.querySelectorAll('.mod-tab');
+    if(tabs[1]) tabs[1].classList.add('on');
+  }
+  ['people-list','people-talk','people-mind','people-neg'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) e.style.display=id==='people-talk'?'block':'none';
+  });
+  renderPeopleTalk();
+}
+
+function renderPeopleTalk(){
+  const el = document.getElementById('people-talk');
+  if(!el) return;
+  const p = currentPerson;
+  if(!p){ el.innerHTML='<div class="pg-hd"><div class="pg-sub">← 34人一覧から選んでください</div></div>'; return; }
+  const ph = PHASES[p.phase-1];
+  el.innerHTML = `
+  <div style="background:linear-gradient(135deg,var(--bg2),var(--sur));padding:.75rem .85rem;flex-shrink:0;border-bottom:1px solid var(--bor)">
+    <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.5rem">
+      <div style="font-size:1.8rem">${p.emoji}</div>
+      <div style="flex:1">
+        <div style="font-family:var(--fd);font-size:.95rem;font-weight:600">${p.name} <span style="font-size:.58rem;color:var(--txt3);font-family:var(--fb)">${p.age}歳・${p.role}</span></div>
+        <div style="font-size:.58rem;color:var(--txt2);margin-top:.08rem">${p.trait}</div>
+      </div>
+    </div>
+    <!-- フェーズ・同期スコア -->
+    <div style="display:flex;gap:.4rem;align-items:center;margin-bottom:.38rem">
+      <span style="font-size:.6rem;font-weight:700;padding:.14rem .42rem;border-radius:var(--rf);background:${ph.color}18;color:${ph.color}">${ph.emoji} ${ph.label}</span>
+      <span style="font-size:.55rem;color:var(--txt3)">MBTI: ${p.mbti}</span>
+      <span style="font-size:.55rem;color:var(--txt3)">${p.element}タイプ</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:.4rem">
+      <span style="font-size:.56rem;color:var(--txt3);flex-shrink:0">脳間同期</span>
+      <div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div id="sc-sync-bar" style="height:100%;width:${scSyncScore}%;background:linear-gradient(90deg,var(--morphe),var(--nous));border-radius:3px;transition:width .8s"></div>
+      </div>
+      <span id="sc-sync-val" style="font-size:.7rem;font-weight:700;color:var(--morphe);min-width:28px">${scSyncScore}%</span>
+    </div>
+    <!-- 今日のホルモン状態 -->
+    <div style="margin-top:.38rem;padding:.35rem .5rem;background:var(--sur);border-radius:var(--r1);border:1px solid var(--bor)">
+      <div style="font-size:.54rem;font-weight:700;color:var(--txt3);margin-bottom:.1rem">⚗️ 推定ホルモン状態</div>
+      <div style="font-size:.62rem;color:var(--txt2)">${p.hormone}</div>
+    </div>
+  </div>
+  <!-- チャット -->
+  <div id="sc-msgs" style="padding:.6rem .8rem;display:flex;flex-direction:column;gap:.42rem;overflow-y:auto;flex:1;min-height:220px;max-height:45vh"></div>
+  <!-- シチュエーション選択 -->
+  <div id="sc-sit-sel" style="padding:.5rem .8rem;background:var(--sur2);border-top:1px solid var(--bor)">
+    <div style="font-size:.58rem;font-weight:700;color:var(--txt3);margin-bottom:.3rem">🎭 シチュエーションを選ぶ</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem">
+      ${p.situations.map(s=>`<button onclick="startSituation('${s}')"
+        style="padding:.42rem .5rem;
+        border-radius:var(--r1);border:1.5px solid var(--bor);background:var(--sur);
+        font-size:.65rem;font-weight:600;color:var(--txt2);cursor:pointer;text-align:left">${s}</button>`).join('')}
+    </div>
+  </div>
+  <!-- 入力フォーム -->
+  <div id="sc-input-area" style="display:none;padding:.45rem .8rem;background:var(--sur);border-top:1px solid var(--bor);display:none">
+    <div style="display:flex;gap:.3rem;align-items:flex-end">
+      <textarea id="sc-text" rows="1" placeholder="話しかける..."
+        style="flex:1;
+        padding:.42rem .6rem;
+        border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);
+        font-size:.72rem;color:var(--txt);resize:none;min-height:32px;max-height:80px;line-height:1.5;font-family:var(--fb)"></textarea>
+      <button onclick="sendScMsg()"
+        style="padding:.42rem .7rem;
+        border-radius:var(--rf);
+        background:linear-gradient(135deg,var(--morphe),var(--nous));border:none;
+        font-size:.7rem;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0">送信</button>
+    </div>
+    <div style="display:flex;gap:.3rem;margin-top:.3rem">
+      <button onclick="openPeopleMind()"
+        style="flex:1;
+        padding:.32rem;
+        border-radius:var(--r1);border:1.5px solid var(--morphe);background:var(--morphe-xl);
+        font-size:.56rem;font-weight:700;color:var(--morphe);cursor:pointer">👁 マインドリーディング</button>
+      <button onclick="openPeopleNeg()"
+        style="flex:1;
+        padding:.32rem;
+        border-radius:var(--r1);border:1.5px solid var(--nous);background:var(--nous-xl);
+        font-size:.56rem;font-weight:700;color:var(--nous);cursor:pointer">⚡ NEGOTIUM戦略</button>
+      <button onclick="resetSc()"
+        style="padding:.32rem .5rem;
+        border-radius:var(--r1);border:1px solid var(--bor);background:var(--sur2);
+        font-size:.56rem;color:var(--txt3);cursor:pointer">↩ リセット</button>
+    </div>
+  </div>`;
+}
+
+function startSituation(sit){
+  const p = currentPerson;
+  if(!p) return;
+  // シチュエーション選択を隠して入力エリアを表示
+  const sitSel = document.getElementById('sc-sit-sel');
+  const inputArea = document.getElementById('sc-input-area');
+  if(sitSel) sitSel.style.display='none';
+  if(inputArea){ inputArea.style.display='block'; }
+  // 最初のAIメッセージ
+  const sys = buildPersonSystem(p, sit);
+  addScMsg('system', `📍 シチュエーション：${sit}`);
+  const msgs = document.getElementById('sc-msgs');
+  const typing = document.createElement('div');
+  typing.className='msg ai'; typing.id='sc-typing';
+  typing.innerHTML='<div class="msg-bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>';
+  if(msgs){ msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight; }
+  callGemini(sys, `シチュエーション「${sit}」の最初のセリフを1〜2文で言ってください。${p.name}として自然に。`, 300)
+    .then(reply=>{
+      const t=document.getElementById('sc-typing');
+      if(t)t.remove();
+      addScMsg('ai', reply);
+      scHistory.push({role:'assistant',content:reply});
+    });
+}
+
+function buildPersonSystem(p, sit){
+  const ph = PHASES[p.phase-1];
+  const hist = scHistory.map(m=>(m.role==='user'?'相手：':p.name+'：')+m.content).join('\n');
+  return `あなたは「${p.name}」（${p.age}歳・${p.role}）という人物です。
+性格: ${p.trait}
+MBTI: ${p.mbti} / タイプ: ${p.element}
+ホルモン状態: ${p.hormone}
+現在の関係フェーズ: ${ph.label}（脳間同期${scSyncScore}%）
+脳科学的特性: ${p.brain}
+シチュエーション: ${sit}
+
+【絶対ルール】
+・${p.name}本人として自然に話す（解説・箇条書き禁止）
+・返答は1〜3文のみ
+・フェーズ${p.phase}（${ph.label}）の距離感を守る
+・同期${scSyncScore}%に合った温度感で
+・AIっぽい言い回し禁止
+${hist ? '【会話履歴】\n'+hist : ''}`;  
+}
+
+function addScMsg(role, text){
+  const msgs = document.getElementById('sc-msgs');
+  if(!msgs) return;
+  const d = document.createElement('div');
+  if(role==='system'){
+    d.style.cssText='text-align:center;font-size:.56rem;color:var(--txt3);padding:.15rem 0;';
+    d.textContent=text;
+  } else {
+    d.className='msg '+(role==='user'?'user':'ai');
+    d.innerHTML=`<div class="msg-bubble">${text}</div>`;
+  }
+  msgs.appendChild(d);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendScMsg(){
+  const p = currentPerson;
+  if(!p) return;
+  const input = document.getElementById('sc-text');
+  const text = input?.value.trim();
+  if(!text) return;
+  input.value='';
+  addScMsg('user', text);
+  scHistory.push({role:'user', content:text});
+  // typing
+  const msgs = document.getElementById('sc-msgs');
+  const typing = document.createElement('div');
+  typing.className='msg ai'; typing.id='sc-typing';
+  typing.innerHTML='<div class="msg-bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>';
+  if(msgs){ msgs.appendChild(typing); msgs.scrollTop=msgs.scrollHeight; }
+  const sys = buildPersonSystem(p, '継続中の会話');
+  const hist = scHistory.slice(-8).map(m=>(m.role==='user'?'相手：':p.name+'：')+m.content).join('\n');
+  const reply = await callGemini(sys, hist + '\n相手：' + text, 400);
+  const t = document.getElementById('sc-typing');
+  if(t) t.remove();
+  addScMsg('ai', reply);
+  scHistory.push({role:'assistant', content:reply});
+  // 脳間同期スコア更新（会話回数で上昇）
+  const newSync = Math.min(95, scSyncScore + Math.floor(Math.random()*4+2));
+  scSyncScore = newSync;
+  currentPerson.sync = newSync;
+  const bar = document.getElementById('sc-sync-bar');
+  const val = document.getElementById('sc-sync-val');
+  if(bar) bar.style.width = newSync+'%';
+  if(val) val.textContent = newSync+'%';
+  // フェーズ自動昇格
+  const newPhase = newSync>=80?4:newSync>=55?3:newSync>=25?2:1;
+  if(newPhase > currentPerson.phase){
+    currentPerson.phase = newPhase;
+    const ph = PHASES[newPhase-1];
+    addScMsg('system', `🎉 関係フェーズが「${ph.emoji} ${ph.label}」に上昇！`);
+  }
+  // window.storageにキャッシュ
+  await WS.set('people_'+p.id, {sync:newSync, phase:currentPerson.phase, ts:Date.now()});
+}
+
+function resetSc(){
+  scHistory=[];
+  scSyncScore=0;
+  if(currentPerson){ currentPerson.sync=0; currentPerson.phase=1; }
+  renderPeopleTalk();
+}
+
+function renderPeopleMind(){
+  const el = document.getElementById('people-mind');
+  if(!el) return;
+  const p = currentPerson;
+  if(!p){
+    el.innerHTML='<div class="pg-hd"><div class="pg-sub">← まず34人一覧から人物を選んでください</div></div>';
+    return;
+  }
+  el.innerHTML=`
+  <div class="pg-hd">
+    <div class="pg-title">👁 ${p.name}のマインドリーディング</div>
+    <div class="pg-sub">${p.brain}</div>
+  </div>
+  <div style="padding:0 .85rem">
+    <div class="card" style="margin-bottom:.5rem"><div class="card-bd">
+      <div style="font-size:.58rem;font-weight:700;color:var(--txt3);margin-bottom:.3rem">⚗️ 推定ホルモン状態</div>
+      <div class="txt-sm">${p.hormone}</div>
+      <div class="sep"></div>
+      <div style="font-size:.58rem;font-weight:700;color:var(--txt3);margin-bottom:.3rem">🎯 最適アプローチ</div>
+      <div class="txt-sm">${p.approach}</div>
+    </div></div>
+    <textarea id="mind-obs" placeholder="今${p.name}が見せているシグナルを入力（表情・声・姿勢・発言など）..." rows="3"
+      style="width:100%;
+      padding:.6rem .72rem;
+      border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);
+      font-size:.72rem;color:var(--txt);resize:none;line-height:1.65;font-family:var(--fb)"></textarea>
+    <button onclick="runPeopleMindAI()" id="pmind-btn"
+      style="width:100%;
+      padding:.7rem;
+      border-radius:var(--rf);
+      background:linear-gradient(135deg,var(--morphe),var(--nous));border:none;
+      font-size:.78rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.4rem">👁 本音・次の一手を解析</button>
+    <div id="pmind-result" style="margin-top:.6rem;display:none"></div>
+  </div>`;
+}
+
+async function runPeopleMindAI(){
+  const p = currentPerson;
+  const obs = document.getElementById('mind-obs')?.value.trim();
+  if(!obs||!p) return;
+  const btn = document.getElementById('pmind-btn');
+  const res = document.getElementById('pmind-result');
+  btn.disabled=true; btn.textContent='分析中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:.8rem;color:var(--txt3);font-size:.72rem">👁 分析中...</div>';
+  const sys=`あなたは神経科学・進化心理学・マインドリーディングの専門家です。
+特定の人物に対して観察シグナルを分析します。
+人物: ${p.name}（${p.age}歳・${p.role}）
+MBTI: ${p.mbti} / ホルモン傾向: ${p.hormone}
+脳科学的特性: ${p.brain}
+現在の関係フェーズ: ${PHASES[p.phase-1].label}（脳間同期${scSyncScore}%）
+---
+以下を分析してください：
+1. 今の本音・感情状態
+2. 何を考えているか（脳内処理）
+3. 次の行動予測
+4. 今すべき一手（言葉・態度・タイミング）
+5. 避けるべき行動
+簡潔・具体的・即実践できる形で。`;
+  const reply = await callGemini(sys, `観察シグナル: ${obs}`, 900);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false; btn.textContent='👁 本音・次の一手を解析';
+  await WS.set('pmind_last_'+p.id, {obs,reply,ts:Date.now()});
+}
+
+function renderPeopleNeg(){
+  const el = document.getElementById('people-neg');
+  if(!el) return;
+  const p = currentPerson;
+  if(!p){
+    el.innerHTML='<div class="pg-hd"><div class="pg-sub">← まず34人一覧から人物を選んでください</div></div>';
+    return;
+  }
+  const sits = p.situations.join('・');
+  el.innerHTML=`
+  <div class="pg-hd">
+    <div class="pg-title">⚡ ${p.name}との交渉戦略</div>
+    <div class="pg-sub">${p.role}に最適化された色彩×香水×ホルモン×言語戦略</div>
+  </div>
+  <div style="padding:0 .85rem">
+    <div class="acc open">
+      <div class="acc-hd"><span class="acc-ico">🎯</span>
+        <span class="acc-title">この人物の攻略基本原則</span></div>
+      <div class="acc-body">
+        <div class="science-box">🧠 ${p.brain}</div>
+        <div class="practice-box">✓ 最適アプローチ: ${p.approach}</div>
+      </div>
+    </div>
+    <textarea id="neg-goal" placeholder="今回の目標を入力（例：価格を10%下げてもらいたい / 信頼関係を築きたい / クレームを解決したい）..." rows="3"
+      style="width:100%;
+      padding:.6rem .72rem;
+      border-radius:var(--r2);border:1.5px solid var(--bor);background:var(--sur2);
+      font-size:.72rem;color:var(--txt);resize:none;line-height:1.65;margin-top:.4rem;font-family:var(--fb)"></textarea>
+    <button onclick="runPeopleNegAI()" id="pneg-btn"
+      style="width:100%;
+      padding:.7rem;
+      border-radius:var(--rf);
+      background:linear-gradient(135deg,var(--pneuma),var(--morphe));border:none;
+      font-size:.78rem;font-weight:700;color:#fff;cursor:pointer;margin-top:.4rem">⚡ 完全交渉戦略を生成</button>
+    <div id="pneg-result" style="margin-top:.6rem;display:none"></div>
+  </div>`;
+}
+
+async function runPeopleNegAI(){
+  const p = currentPerson;
+  const goal = document.getElementById('neg-goal')?.value.trim();
+  if(!goal||!p) return;
+  const btn = document.getElementById('pneg-btn');
+  const res = document.getElementById('pneg-result');
+  btn.disabled=true; btn.textContent='生成中...';
+  res.style.display='block';
+  res.innerHTML='<div style="text-align:center;padding:.8rem;color:var(--txt3);font-size:.72rem">⚡ 交渉戦略を設計中...</div>';
+  const sys=`あなたは神経科学×進化心理学×行動経済学の交渉専門家です。
+特定の人物に対する完全交渉戦略を設計します。
+対象: ${p.name}（${p.age}歳・${p.role}）
+性格: ${p.trait} / MBTI: ${p.mbti}
+ホルモン傾向: ${p.hormone}
+脳科学的特性: ${p.brain}
+最適アプローチ: ${p.approach}
+現在の関係フェーズ: ${PHASES[p.phase-1].label}（脳間同期${scSyncScore}%）
+---
+以下の6軸で戦略を提示してください：
+1. 服の色彩戦略（この人物に最適な色と脳科学的理由）
+2. 香水戦略（この人物のコルチゾールを下げる香調）
+3. 開始前ホルモン設計（自分の準備・相手への働きかけ）
+4. 開始5分間のプロトコル（具体的な言葉・行動・座り方）
+5. この人物に刺さる言語パターン（キーワード・言い回し）
+6. 絶対にやってはいけないこと
+具体的・実践的に。`;
+  const reply = await callGemini(sys, `目標: ${goal}`, 1400);
+  res.innerHTML=`<div class="card"><div class="card-bd" style="white-space:pre-wrap;font-size:.7rem;line-height:1.78">${reply}</div></div>`;
+  btn.disabled=false; btn.textContent='⚡ 完全交渉戦略を生成';
+  await WS.set('pneg_last_'+p.id, {goal,reply,ts:Date.now()});
+}
+
+function openPeopleMind(){
+  const page = document.getElementById('pg-people');
+  if(page){
+    page.querySelectorAll('.mod-tab').forEach(b=>b.classList.remove('on'));
+    const tabs = page.querySelectorAll('.mod-tab');
+    if(tabs[2]) tabs[2].classList.add('on');
+  }
+  ['people-list','people-talk','people-mind','people-neg'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) e.style.display=id==='people-mind'?'block':'none';
+  });
+  renderPeopleMind();
+}
+
+function openPeopleNeg(){
+  const page = document.getElementById('pg-people');
+  if(page){
+    page.querySelectorAll('.mod-tab').forEach(b=>b.classList.remove('on'));
+    const tabs = page.querySelectorAll('.mod-tab');
+    if(tabs[3]) tabs[3].classList.add('on');
+  }
+  ['people-list','people-talk','people-mind','people-neg'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e) e.style.display=id==='people-neg'?'block':'none';
+  });
+  renderPeopleNeg();
+}
+
+/* nav拡張にpeopleを追加 — 既存navに統合 */
+
+</script>
+</body>
+</html>
+
