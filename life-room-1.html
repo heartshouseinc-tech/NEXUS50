@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>🌏 LIFE ROOM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --bg:#0a0a14;--bg2:#12121e;--surface:#1a1a28;--surface2:#1e1e30;
+  --border:#2a2a40;--txt:#e8e8ff;--txt2:#9090b0;--txt3:#505070;
+  --blue:#3b82f6;--violet:#7c3aed;--rose:#be123c;--teal:#0f766e;
+  --gold:#d97706;--green:#059669;--orange:#ea580c;--indigo:#3730a3;
+  --r-sm:6px;--r-md:10px;--r-lg:16px;--r-full:999px;
+  --fd:'Hiragino Mincho ProN',serif;
+}
+body{background:var(--bg);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+  height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+
+/* ── スプラッシュ ── */
+#splash{background:linear-gradient(160deg,#0a0a14,#1a0a2e,#0a1428);
+  align-items:center;justify-content:center;gap:.5rem;}
+.splash-logo{font-size:4rem;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+.splash-title{font-family:var(--fd);font-size:2.2rem;font-weight:700;
+  background:linear-gradient(135deg,#3b82f6,#7c3aed,#be123c,#d97706);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:shimmer 3s ease-in-out infinite;}
+@keyframes shimmer{0%,100%{filter:brightness(1);}50%{filter:brightness(1.3);}}
+.splash-sub{font-size:.75rem;color:var(--txt3);letter-spacing:.12em;}
+.splash-dots{display:flex;gap:.4rem;margin-top:.5rem;}
+.splash-dot{width:8px;height:8px;border-radius:50%;animation:td .9s infinite;}
+.splash-dot:nth-child(1){background:var(--blue);animation-delay:0s;}
+.splash-dot:nth-child(2){background:var(--violet);animation-delay:.15s;}
+.splash-dot:nth-child(3){background:var(--rose);animation-delay:.3s;}
+.splash-dot:nth-child(4){background:var(--gold);animation-delay:.45s;}
+
+/* ── 認証 ── */
+#auth-screen{background:var(--bg);overflow-y:auto;padding:1.5rem 1rem;}
+.auth-logo{text-align:center;padding:1.5rem 0 1rem;}
+.auth-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:20px;padding:1.25rem;max-width:400px;margin:0 auto 1rem;}
+.auth-title{font-size:1rem;font-weight:700;text-align:center;margin-bottom:1rem;color:var(--txt);}
+.inp{width:100%;padding:.65rem .85rem;border-radius:var(--r-md);
+  border:1.5px solid var(--border);background:var(--surface2);
+  color:var(--txt);font-size:.82rem;outline:none;margin-bottom:.5rem;}
+.inp:focus{border-color:var(--blue);}
+.btn{width:100%;padding:.75rem;border-radius:var(--r-full);border:none;
+  font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;}
+.btn-primary:active{opacity:.85;}
+.btn-secondary{background:var(--surface2);border:1.5px solid var(--border);
+  color:var(--txt2);margin-top:.4rem;}
+.btn-google{background:#fff;color:#333;border:1.5px solid #ddd;
+  margin-top:.4rem;display:flex;align-items:center;justify-content:center;gap:.5rem;}
+
+/* ── ホーム ── */
+#home-screen{background:var(--bg);}
+.home-header{padding:.7rem .85rem;background:var(--surface);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;}
+.home-title{font-family:var(--fd);font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,var(--blue),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.home-tabs{display:flex;border-bottom:1px solid var(--border);
+  background:var(--surface);flex-shrink:0;}
+.htab{flex:1;padding:.6rem .3rem;font-size:.65rem;font-weight:600;
+  color:var(--txt3);background:none;border:none;cursor:pointer;
+  border-bottom:2px solid transparent;transition:all .15s;}
+.htab.on{color:var(--blue);border-bottom-color:var(--blue);}
+.room-list{flex:1;overflow-y:auto;padding:.5rem .75rem;}
+.room-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:.7rem .85rem;margin-bottom:.4rem;
+  cursor:pointer;transition:transform .12s,border-color .15s;
+  animation:cardIn .3s ease-out;}
+.room-card:active{transform:scale(.98);}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.room-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem;}
+.room-name{font-size:.88rem;font-weight:700;color:var(--txt);}
+.room-badge{font-size:.58rem;padding:.18rem .5rem;border-radius:var(--r-full);font-weight:700;}
+.badge-open{background:var(--green)20;color:var(--green);}
+.badge-full{background:var(--txt3)20;color:var(--txt3);}
+.room-meta{font-size:.6rem;color:var(--txt2);}
+.fab{position:fixed;right:1rem;bottom:1.5rem;width:54px;height:54px;
+  border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--violet));
+  border:none;color:#fff;font-size:1.5rem;cursor:pointer;z-index:10;
+  box-shadow:0 4px 20px rgba(59,130,246,.4);
+  animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 4px 20px rgba(59,130,246,.4);}
+  50%{box-shadow:0 4px 30px rgba(59,130,246,.7);}}
+
+/* ── モーダル ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  z-index:100;align-items:flex-end;}
+.modal-overlay.open{display:flex;animation:fadeIn .2s ease-out;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal-sheet{background:var(--bg2);border-radius:20px 20px 0 0;
+  padding:1.25rem;width:100%;max-height:88vh;overflow-y:auto;
+  animation:slideUp .25s ease-out;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:var(--border);
+  margin:0 auto .75rem;}
+.modal-title{font-size:1rem;font-weight:700;color:var(--txt);
+  margin-bottom:1rem;text-align:center;}
+.field-label{font-size:.65rem;color:var(--txt3);margin-bottom:.25rem;display:block;}
+.field-group{margin-bottom:.65rem;}
+.sel-btns{display:grid;grid-template-columns:1fr 1fr;gap:.35rem;}
+.sel-btn{padding:.5rem;border-radius:var(--r-md);border:1.5px solid var(--border);
+  background:var(--surface2);color:var(--txt2);font-size:.63rem;
+  cursor:pointer;text-align:center;transition:all .12s;}
+.sel-btn.on{border-color:var(--blue);background:var(--blue)18;color:var(--blue);}
+.num-row{display:flex;align-items:center;gap:.5rem;}
+.num-btn{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);
+  background:var(--surface2);color:var(--txt);font-size:1rem;cursor:pointer;}
+.num-val{font-size:.88rem;font-weight:700;color:var(--blue);min-width:30px;text-align:center;}
+.sit-grid{display:grid;grid-template-columns:1fr 1fr;gap:.3rem;max-height:220px;overflow-y:auto;}
+.sit-btn{padding:.45rem .5rem;border-radius:var(--r-md);border:1.5px solid var(--border);
+  background:var(--surface2);color:var(--txt2);font-size:.6rem;cursor:pointer;
+  text-align:left;transition:all .12s;}
+.sit-btn.on{border-color:var(--blue);background:var(--blue)15;color:var(--blue);}
+
+/* ── チャット ── */
+#chat-screen{background:var(--bg);}
+.chat-header{padding:.6rem .85rem;background:var(--surface);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;
+  gap:.5rem;flex-shrink:0;}
+.back-btn{background:none;border:none;color:var(--txt3);font-size:1.1rem;cursor:pointer;}
+.chat-info{flex:1;}
+.chat-room-name{font-size:.9rem;font-weight:700;color:var(--txt);}
+.chat-room-meta{font-size:.56rem;color:var(--txt3);}
+.score-bar-wrap{padding:.3rem .85rem;background:var(--surface);
+  border-bottom:1px solid var(--border);flex-shrink:0;}
+.score-label{font-size:.55rem;color:var(--txt3);margin-bottom:.15rem;
+  display:flex;justify-content:space-between;}
+.score-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.score-fill{height:100%;border-radius:4px;transition:width .5s ease;
+  background:linear-gradient(90deg,var(--rose),var(--gold),var(--green));}
+.chars-bar{display:flex;gap:.3rem;padding:.4rem .75rem;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  overflow-x:auto;flex-shrink:0;}
+.char-chip{flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+  padding:.3rem .4rem;border-radius:10px;border:1.5px solid var(--border);
+  background:var(--surface);cursor:pointer;transition:all .15s;min-width:52px;}
+.char-chip:active{transform:scale(.95);}
+.char-chip-img{width:34px;height:34px;border-radius:50%;margin-bottom:.15rem;
+  object-fit:cover;background:linear-gradient(135deg,#f0d0e8,#d0d0f8);}
+.char-chip-name{font-size:.55rem;font-weight:700;color:var(--txt);}
+.char-chip-mood{font-size:.5rem;color:var(--txt3);}
+.mood-bar{width:30px;height:3px;background:var(--border);border-radius:2px;
+  overflow:hidden;margin-top:.1rem;}
+.mood-fill{height:100%;border-radius:2px;transition:width .5s;}
+.msg-area{flex:1;overflow-y:auto;padding:.75rem;
+  display:flex;flex-direction:column;gap:.5rem;min-height:0;}
+.msg-row{display:flex;align-items:flex-end;gap:.4rem;
+  animation:msgIn .25s ease-out;}
+.msg-row.me{justify-content:flex-end;}
+.msg-row.char{justify-content:flex-start;}
+.msg-row.system{justify-content:center;}
+.msg-row.narrator{justify-content:center;}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes msgInR{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:translateX(0);}}
+.msg-row.me{animation:msgInR .25s ease-out;}
+.char-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  position:relative;overflow:hidden;background:linear-gradient(135deg,#d0d0f8,#f0d0e8);}
+.char-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.mouth{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);
+  width:8px;height:4px;border-radius:0 0 4px 4px;
+  background:rgba(255,255,255,.65);}
+.mouth.talking{animation:talk .25s infinite alternate;}
+@keyframes talk{0%{height:2px;}100%{height:6px;border-radius:0 0 5px 5px;}}
+.msg-content{max-width:78%;}
+.msg-name{font-size:.55rem;color:var(--txt3);margin-bottom:.1rem;}
+.bubble{padding:.55rem .75rem;border-radius:14px;font-size:.76rem;line-height:1.68;}
+.bubble-me{background:linear-gradient(135deg,var(--blue),var(--violet));color:#fff;
+  border-radius:14px 14px 4px 14px;}
+.bubble-char{background:var(--surface);border:1.5px solid var(--border);color:var(--txt);
+  border-radius:4px 14px 14px 14px;}
+.bubble-member{background:var(--surface2);border:1px solid var(--border);color:var(--txt);
+  border-radius:4px 14px 14px 14px;}
+.bubble-system{background:var(--border)60;color:var(--txt3);font-size:.62rem;
+  padding:.3rem .7rem;border-radius:var(--r-full);}
+.bubble-narrator{background:linear-gradient(135deg,var(--violet)20,var(--blue)10);
+  border:1px solid var(--violet)40;color:var(--txt2);font-size:.65rem;font-style:italic;
+  padding:.4rem .75rem;border-radius:var(--r-md);max-width:90%;}
+.bubble-coach{background:var(--teal)15;border:1px solid var(--teal)40;
+  color:var(--teal);font-size:.65rem;padding:.38rem .65rem;border-radius:var(--r-md);}
+.score-badge{display:inline-block;padding:.12rem .4rem;border-radius:var(--r-full);
+  font-size:.58rem;font-weight:700;margin-left:.3rem;}
+.msg-time{font-size:.5rem;color:var(--txt3);margin-top:.1rem;}
+.typing-bar{padding:.25rem .85rem;background:var(--surface2);
+  border-top:1px solid var(--border);font-size:.6rem;color:var(--txt3);
+  min-height:24px;flex-shrink:0;}
+.typing-user{color:var(--gold);font-weight:700;}
+.input-bar{padding:.5rem .75rem;background:var(--surface);
+  border-top:1px solid var(--border);
+  display:flex;gap:.35rem;align-items:flex-end;flex-shrink:0;}
+.chat-inp{flex:1;padding:.48rem .7rem;border-radius:12px;
+  border:1.5px solid var(--border);background:var(--surface2);
+  color:var(--txt);font-family:inherit;font-size:.78rem;
+  resize:none;min-height:38px;max-height:100px;outline:none;line-height:1.5;}
+.chat-inp:focus{border-color:var(--blue);}
+.send-btn{padding:.48rem .82rem;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--blue),var(--violet));
+  border:none;color:#fff;font-size:.72rem;font-weight:700;
+  cursor:pointer;flex-shrink:0;transition:opacity .12s;}
+.send-btn:disabled{opacity:.4;}
+
+/* ── クリア演出 ── */
+.clear-overlay{display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.8);align-items:center;justify-content:center;}
+.clear-overlay.show{display:flex;animation:fadeIn .3s ease-out;}
+.clear-card{background:linear-gradient(135deg,var(--bg2),var(--surface));
+  border:2px solid var(--gold);border-radius:24px;padding:2rem 1.5rem;
+  text-align:center;max-width:320px;width:90%;
+  animation:scaleIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes scaleIn{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.clear-emoji{font-size:3.5rem;margin-bottom:.5rem;animation:bounce .6s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+.clear-title{font-family:var(--fd);font-size:1.5rem;font-weight:700;
+  color:var(--gold);margin-bottom:.35rem;}
+.clear-score{font-size:2.5rem;font-weight:800;
+  background:linear-gradient(135deg,var(--gold),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.confetti{position:absolute;pointer-events:none;}
+
+/* ── タイピングドット ── */
+@keyframes td{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.tdot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--blue);animation:td .9s infinite;}
+.tdot:nth-child(2){animation-delay:.15s;}
+.tdot:nth-child(3){animation-delay:.3s;}
+
+/* ランキング */
+.rank-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:.65rem .85rem;margin-bottom:.38rem;display:flex;align-items:center;gap:.6rem;}
+.rank-num{font-size:1.1rem;font-weight:800;min-width:28px;text-align:center;}
+.rank-info{flex:1;}
+.rank-name{font-size:.8rem;font-weight:700;color:var(--txt);}
+.rank-meta{font-size:.58rem;color:var(--txt3);}
+.rank-score{font-size:.9rem;font-weight:800;color:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- スプラッシュ -->
+<div class="screen active" id="splash">
+  <div class="splash-logo">🌏</div>
+  <div class="splash-title">LIFE ROOM</div>
+  <div class="splash-sub">人生の全シチュエーションを制覇せよ</div>
+  <div class="splash-dots">
+    <div class="splash-dot"></div><div class="splash-dot"></div>
+    <div class="splash-dot"></div><div class="splash-dot"></div>
+  </div>
+</div>
+
+<!-- 認証 -->
+<div class="screen" id="auth-screen">
+  <div class="auth-logo">
+    <div style="font-size:2.5rem;margin-bottom:.3rem">🌏</div>
+    <div style="font-family:var(--fd);font-size:1.4rem;font-weight:700;
+      background:linear-gradient(135deg,var(--blue),var(--violet));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent">LIFE ROOM</div>
+    <div style="font-size:.65rem;color:var(--txt3);margin-top:.2rem">Firebase × Gemini 2.5 Flash</div>
+  </div>
+  <div class="auth-card">
+    <div id="auth-err" style="font-size:.68rem;color:var(--rose);margin-bottom:.4rem;display:none"></div>
+    <input class="inp" id="auth-email" type="email" placeholder="メールアドレス">
+    <input class="inp" id="auth-pass" type="password" placeholder="パスワード">
+    <button class="btn btn-primary" onclick="doLogin()">ログイン</button>
+    <button class="btn btn-google" onclick="doGoogleLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>Googleでログイン
+    </button>
+    <button class="btn btn-secondary" onclick="showReg()">新規登録</button>
+  </div>
+  <div id="reg-form" style="display:none" class="auth-card">
+    <div class="auth-title">新規登録</div>
+    <input class="inp" id="reg-name" placeholder="ニックネーム">
+    <input class="inp" id="reg-email" type="email" placeholder="メールアドレス">
+    <input class="inp" id="reg-pass" type="password" placeholder="パスワード（6文字以上）">
+    <button class="btn btn-primary" onclick="doRegister()">登録する</button>
+  </div>
+</div>
+
+<!-- ホーム -->
+<div class="screen" id="home-screen">
+  <div class="home-header">
+    <div class="home-title">🌏 LIFE ROOM</div>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <div id="home-user" style="font-size:.62rem;color:var(--txt3)"></div>
+      <button onclick="doLogout()" style="background:none;border:1px solid var(--border);
+        color:var(--txt3);padding:.28rem .6rem;border-radius:var(--r-full);font-size:.6rem;cursor:pointer">
+        ログアウト</button>
+    </div>
+  </div>
+  <div class="home-tabs">
+    <button class="htab on" onclick="switchTab('rooms',this)">🏠 ルーム</button>
+    <button class="htab" onclick="switchTab('chars',this)">👥 キャラ50人</button>
+    <button class="htab" onclick="switchTab('sits',this)">🎭 シチュエーション</button>
+    <button class="htab" onclick="switchTab('ranking',this)">🏆 ランキング</button>
+  </div>
+  <div id="ht-rooms" class="room-list"></div>
+  <div id="ht-chars" style="display:none;flex:1;overflow-y:auto;padding:.5rem .75rem"></div>
+  <div id="ht-sits" style="display:none;flex:1;overflow-y:auto;padding:.5rem .75rem"></div>
+  <div id="ht-ranking" style="display:none;flex:1;overflow-y:auto;padding:.5rem .75rem"></div>
+  <button class="fab" onclick="openCreateModal()">＋</button>
+</div>
+
+<!-- 作成モーダル -->
+<div class="modal-overlay" id="create-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🌏 ライフルームを作成</div>
+    <div class="field-group">
+      <label class="field-label">ルーム名</label>
+      <input class="inp" id="new-room-name" placeholder="例：営業プレゼン道場">
+    </div>
+    <div class="field-group">
+      <label class="field-label">カテゴリ</label>
+      <div class="sel-btns" id="cat-btns"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">シチュエーション</label>
+      <div class="sit-grid" id="sit-grid"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">参加人数（最大）</label>
+      <div class="num-row">
+        <button class="num-btn" onclick="changeN('m',-1)">−</button>
+        <div class="num-val" id="num-m">2</div>
+        <button class="num-btn" onclick="changeN('m',1)">＋</button>
+        <span style="font-size:.65rem;color:var(--txt3)">人</span>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">AIキャラ人数</label>
+      <div class="num-row">
+        <button class="num-btn" onclick="changeN('c',-1)">−</button>
+        <div class="num-val" id="num-c">2</div>
+        <button class="num-btn" onclick="changeN('c',1)">＋</button>
+        <span style="font-size:.65rem;color:var(--txt3)">人</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:.5rem" onclick="createRoom()">🌏 ルームを作成</button>
+    <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- チャット -->
+<div class="screen" id="chat-screen">
+  <div class="chat-header">
+    <button class="back-btn" onclick="leaveRoom()">←</button>
+    <div class="chat-info">
+      <div class="chat-room-name" id="chat-name">ルーム名</div>
+      <div class="chat-room-meta" id="chat-meta">読み込み中...</div>
+    </div>
+    <div id="chat-members" style="display:flex;gap:.15rem"></div>
+  </div>
+  <div class="score-bar-wrap">
+    <div class="score-label">
+      <span>🎯 説得度ゲージ</span>
+      <span id="score-pct">0%</span>
+    </div>
+    <div class="score-bar"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
+  </div>
+  <div class="chars-bar" id="chars-bar"></div>
+  <div class="msg-area" id="msg-area"></div>
+  <div class="typing-bar" id="typing-bar"></div>
+  <div class="input-bar">
+    <textarea class="chat-inp" id="chat-inp" rows="1" placeholder="発言する..."
+      oninput="onInp(this)"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMsg()" disabled>送信</button>
+  </div>
+</div>
+
+<!-- クリア演出 -->
+<div class="clear-overlay" id="clear-overlay">
+  <div class="clear-card">
+    <div class="clear-emoji" id="clear-emoji">🎉</div>
+    <div class="clear-title" id="clear-title">クリア！</div>
+    <div class="clear-score" id="clear-score">85点</div>
+    <div id="clear-msg" style="font-size:.7rem;color:var(--txt2);margin:.5rem 0 1rem;line-height:1.6"></div>
+    <button class="btn btn-primary" onclick="closeClear()">続ける</button>
+  </div>
+</div>
+
+<script type="module">
+import{initializeApp}from'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import{getAuth,signInWithEmailAndPassword,signInWithPopup,createUserWithEmailAndPassword,
+  signOut,onAuthStateChanged,updateProfile,GoogleAuthProvider}
+  from'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import{getFirestore,collection,doc,addDoc,setDoc,getDoc,getDocs,
+  onSnapshot,query,orderBy,limit,serverTimestamp,updateDoc,deleteDoc,where}
+  from'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig={
+  apiKey:"AIzaSyCVk2miG5TK1ffTofXLh0hHgeSbOvmIgZ8",
+  authDomain:"kensetsu-nippo-842a2.firebaseapp.com",
+  projectId:"kensetsu-nippo-842a2",
+  storageBucket:"kensetsu-nippo-842a2.firebasestorage.app",
+  messagingSenderId:"702880974315",
+  appId:"1:702880974315:web:985321dc9180046629c5ae"
+};
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const db=getFirestore(app);
+const gProv=new GoogleAuthProvider();
+
+const FUNC_BASE=(location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ?'http://localhost:5001/kensetsu-nippo-842a2/us-central1'
+  :'https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net';
+const HH_KEY='HeartsHouse2026Key';
+
+async function callAI(system,prompt,maxT=800){
+  var full=system?'【あなたへの指示】\n'+system+'\n\n【発言】\n'+prompt:prompt;
+  var r=await fetch(FUNC_BASE+'/askAI',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-access-key':HH_KEY},
+    body:JSON.stringify({prompt:full,model:'gemini-2.5-flash',mode:'normal'})
+  });
+  var d=await r.json();
+  return d?.data?.text||d?.candidates?.[0]?.content?.parts?.[0]?.text||d?.text||'';
+}
+
+// ── データ ──
+const CATEGORIES=[
+  {id:'biz',label:'ビジネス',emoji:'💼',color:'#3b82f6'},
+  {id:'family',label:'家族・親族',emoji:'🏠',color:'#10b981'},
+  {id:'friend',label:'友人・恋愛',emoji:'❤️',color:'#be123c'},
+  {id:'social',label:'社会・特殊',emoji:'🌐',color:'#7c3aed'},
+  {id:'medical',label:'医療・法律',emoji:'⚕️',color:'#d97706'},
+  {id:'growth',label:'自己成長',emoji:'🌱',color:'#059669'},
+];
+
+const SITUATIONS=[
+  {id:'s01',cat:'biz',title:'重要プレゼン',emoji:'📊',desc:'得意先3人相手に一人でプレゼン',difficulty:3},
+  {id:'s02',cat:'biz',title:'値上げ交渉',emoji:'💰',desc:'上司への予算・値上げ交渉',difficulty:3},
+  {id:'s03',cat:'biz',title:'クレーム対応',emoji:'😡',desc:'怒り顧客へのクレーム電話対応',difficulty:4},
+  {id:'s04',cat:'biz',title:'部下へのフィードバック',emoji:'👔',desc:'難しい評価を部下に伝える',difficulty:3},
+  {id:'s05',cat:'biz',title:'接待・酒席',emoji:'🍶',desc:'初対面の重役との接待',difficulty:3},
+  {id:'s06',cat:'biz',title:'圧迫面接',emoji:'🎓',desc:'採用面接（圧迫面接官側）',difficulty:4},
+  {id:'s07',cat:'biz',title:'価格交渉',emoji:'🤝',desc:'取引先との価格交渉',difficulty:3},
+  {id:'s08',cat:'biz',title:'会議での反論',emoji:'💬',desc:'会議で反対意見を押し切る',difficulty:3},
+  {id:'s09',cat:'biz',title:'謝罪会見',emoji:'🙇',desc:'クライシス対応・謝罪',difficulty:5},
+  {id:'s10',cat:'biz',title:'リモート商談',emoji:'💻',desc:'オンライン商談・初対面',difficulty:2},
+  {id:'s11',cat:'family',title:'進路報告',emoji:'🎓',desc:'親への反対される進路報告',difficulty:3},
+  {id:'s12',cat:'family',title:'パートナーへの謝罪',emoji:'💔',desc:'大切な人への謝罪',difficulty:4},
+  {id:'s13',cat:'family',title:'離婚の話し合い',emoji:'⚖️',desc:'冷静な離婚調停の話し合い',difficulty:5},
+  {id:'s14',cat:'family',title:'反抗期の子供',emoji:'👦',desc:'反抗期の子供との対話',difficulty:4},
+  {id:'s15',cat:'family',title:'介護施設の説明',emoji:'🏥',desc:'親の介護施設入居の説明',difficulty:3},
+  {id:'s16',cat:'family',title:'義実家への挨拶',emoji:'👘',desc:'初回の義実家への挨拶',difficulty:3},
+  {id:'s17',cat:'family',title:'遺産相続会議',emoji:'📜',desc:'親族間の遺産相続の話し合い',difficulty:5},
+  {id:'s18',cat:'family',title:'子供の学校面談',emoji:'✏️',desc:'担任との問題行動の面談',difficulty:3},
+  {id:'s19',cat:'friend',title:'本音トーク',emoji:'🗣️',desc:'友人への難しい本音を伝える',difficulty:2},
+  {id:'s20',cat:'friend',title:'告白・関係構築',emoji:'💕',desc:'好きな人への告白',difficulty:4},
+  {id:'s21',cat:'friend',title:'断りの技術',emoji:'✋',desc:'上司・先輩の誘いを断る',difficulty:3},
+  {id:'s22',cat:'friend',title:'嫉妬する友人',emoji:'😤',desc:'嫉妬しやすい友人との対話',difficulty:3},
+  {id:'s23',cat:'social',title:'ご近所トラブル',emoji:'🏘️',desc:'騒音・ゴミ問題の解決',difficulty:3},
+  {id:'s24',cat:'social',title:'住民説明会',emoji:'📢',desc:'反対意見の多い住民説明会',difficulty:4},
+  {id:'s25',cat:'social',title:'炎上謝罪',emoji:'🔥',desc:'SNS炎上後の謝罪会見',difficulty:5},
+  {id:'s26',cat:'social',title:'外国人ビジネス',emoji:'🌍',desc:'外国人パートナーとの交渉',difficulty:3},
+  {id:'s27',cat:'social',title:'転職面接',emoji:'💼',desc:'前職退職理由の説明',difficulty:3},
+  {id:'s28',cat:'social',title:'警察・行政対応',emoji:'🚔',desc:'難しい行政手続きの交渉',difficulty:3},
+  {id:'s29',cat:'medical',title:'医師への説明',emoji:'🏥',desc:'時間のない医師への症状説明',difficulty:2},
+  {id:'s30',cat:'medical',title:'弁護士相談',emoji:'⚖️',desc:'法的問題の弁護士相談',difficulty:3},
+];
+
+const CHARACTERS=[
+  {id:1,name:'田中部長',age:58,job:'上司',cat:'biz',trait:'厳格・数字重視',mood:40,avatar:'tanaka'},
+  {id:2,name:'山田社長',age:52,job:'得意先社長',cat:'biz',trait:'気難しい・プライド高い',mood:35,avatar:'yamada'},
+  {id:3,name:'鈴木課長',age:45,job:'中間管理職',cat:'biz',trait:'板挟みで慎重',mood:55,avatar:'suzuki'},
+  {id:4,name:'佐藤新人',age:22,job:'新入社員',cat:'biz',trait:'やる気はあるが頼りない',mood:65,avatar:'sato'},
+  {id:5,name:'加藤担当',age:35,job:'取引先担当',cat:'biz',trait:'懐疑的・交渉好き',mood:50,avatar:'kato'},
+  {id:6,name:'斉藤CEO',age:48,job:'外資系CEO',cat:'biz',trait:'結果主義・直接的',mood:45,avatar:'saito'},
+  {id:7,name:'木村先輩',age:38,job:'先輩社員',cat:'biz',trait:'無茶振り多い',mood:60,avatar:'kimura'},
+  {id:8,name:'松本担当',age:29,job:'受付・窓口',cat:'biz',trait:'ルール厳守・融通なし',mood:50,avatar:'matsumoto'},
+  {id:9,name:'井上クライアント',age:42,job:'クライアント',cat:'biz',trait:'要求が高い',mood:40,avatar:'inoue'},
+  {id:10,name:'小林コンサル',age:40,job:'外部コンサル',cat:'biz',trait:'論理的・批判的',mood:45,avatar:'kobayashi'},
+  {id:11,name:'お母さん',age:63,job:'主婦',cat:'family',trait:'過干渉・心配性',mood:60,avatar:'mom'},
+  {id:12,name:'お父さん',age:65,job:'元会社員',cat:'family',trait:'頑固・昔気質',mood:45,avatar:'dad'},
+  {id:13,name:'義母',age:62,job:'主婦',cat:'family',trait:'価値観が合わない',mood:40,avatar:'mother_in_law'},
+  {id:14,name:'反抗期の息子',age:16,job:'高校生',cat:'family',trait:'反抗期・話を聞かない',mood:30,avatar:'son'},
+  {id:15,name:'妻',age:38,job:'会社員',cat:'family',trait:'感情的・不満が溜まっている',mood:35,avatar:'wife'},
+  {id:16,name:'姉',age:42,job:'会社員',cat:'family',trait:'遠慮なし・正直すぎる',mood:55,avatar:'sister'},
+  {id:17,name:'親戚のおじさん',age:55,job:'自営業',cat:'family',trait:'昔の価値観・説教好き',mood:50,avatar:'uncle'},
+  {id:18,name:'担任の先生',age:44,job:'教師',cat:'family',trait:'原則主義・変化に慎重',mood:55,avatar:'teacher'},
+  {id:19,name:'みなみ',age:27,job:'友人',cat:'friend',trait:'本音を言わない・気を遣う',mood:65,avatar:'minami'},
+  {id:20,name:'けんじ',age:32,job:'親友',cat:'friend',trait:'正直すぎる・傷つける',mood:60,avatar:'kenji'},
+  {id:21,name:'さやか',age:25,job:'片思いの相手',cat:'friend',trait:'奥手・警戒心強め',mood:55,avatar:'sayaka'},
+  {id:22,name:'たけし先輩',age:36,job:'飲み仲間',cat:'friend',trait:'断れない空気を作る',mood:65,avatar:'takeshi'},
+  {id:23,name:'クレーマー',age:50,job:'一般客',cat:'social',trait:'感情的・理不尽',mood:10,avatar:'claimer'},
+  {id:24,name:'近所のおばさん',age:58,job:'専業主婦',cat:'social',trait:'うわさ好き・頑固',mood:35,avatar:'neighbor'},
+  {id:25,name:'反対派住民',age:52,job:'自治会長',cat:'social',trait:'強硬派・リーダー',mood:25,avatar:'resident'},
+  {id:26,name:'記者',age:35,job:'記者',cat:'social',trait:'追求好き・鋭い',mood:40,avatar:'reporter'},
+  {id:27,name:'面接官A',age:48,job:'人事部長',cat:'social',trait:'圧迫気味・細かい',mood:40,avatar:'interviewer_a'},
+  {id:28,name:'面接官B',age:35,job:'現場マネージャー',cat:'social',trait:'実務重視・懐疑的',mood:45,avatar:'interviewer_b'},
+  {id:29,name:'行政担当者',age:38,job:'市役所職員',cat:'social',trait:'規則通り・融通なし',mood:50,avatar:'official'},
+  {id:30,name:'ジョン',age:42,job:'外国人CEO',cat:'social',trait:'直接的・時間厳守',mood:50,avatar:'john'},
+  {id:31,name:'医師',age:48,job:'内科医',cat:'medical',trait:'多忙・簡潔な説明を求める',mood:45,avatar:'doctor'},
+  {id:32,name:'弁護士',age:45,job:'弁護士',cat:'medical',trait:'証拠主義・感情無視',mood:50,avatar:'lawyer'},
+  {id:33,name:'保険担当',age:38,job:'保険会社担当',cat:'medical',trait:'契約主義・逃げ腰',mood:40,avatar:'insurance'},
+  {id:34,name:'審査員',age:52,job:'融資審査員',cat:'medical',trait:'厳格・数字重視',mood:35,avatar:'examiner'},
+  {id:35,name:'コーチ',age:40,job:'メンタルコーチ',cat:'growth',trait:'問いかけ中心・答えを出さない',mood:70,avatar:'coach'},
+  {id:36,name:'メンター',age:50,job:'経営者メンター',cat:'growth',trait:'経験豊富・厳しいが温かい',mood:65,avatar:'mentor'},
+  {id:37,name:'ライバル',age:33,job:'同期ライバル',cat:'biz',trait:'成績優秀・自信家',mood:50,avatar:'rival'},
+  {id:38,name:'部下A',age:25,job:'部下',cat:'biz',trait:'やる気不足・言い訳多い',mood:40,avatar:'staff_a'},
+  {id:39,name:'部下B',age:28,job:'部下',cat:'biz',trait:'優秀だが扱いにくい',mood:55,avatar:'staff_b'},
+  {id:40,name:'パートナー企業',age:45,job:'提携先担当役員',cat:'biz',trait:'利益重視・慎重',mood:45,avatar:'partner'},
+  {id:41,name:'投資家',age:55,job:'エンジェル投資家',cat:'biz',trait:'数字と将来性を問う',mood:45,avatar:'investor'},
+  {id:42,name:'元彼女',age:29,job:'フリーランス',cat:'friend',trait:'感情的・未練がある',mood:30,avatar:'ex'},
+  {id:43,name:'上司の奥さん',age:52,job:'主婦',cat:'social',trait:'気を遣う・観察眼鋭い',mood:55,avatar:'boss_wife'},
+  {id:44,name:'海外クライアント',age:40,job:'欧州企業幹部',cat:'biz',trait:'文化が違う・形式重視',mood:45,avatar:'overseas'},
+  {id:45,name:'NPO代表',age:48,job:'NPO代表',cat:'social',trait:'理想主義・情熱的',mood:60,avatar:'npo'},
+  {id:46,name:'教授',age:60,job:'大学教授',cat:'social',trait:'学術的・権威主義',mood:45,avatar:'professor'},
+  {id:47,name:'警備員',age:42,job:'警備員',cat:'social',trait:'規則厳守・融通なし',mood:50,avatar:'security'},
+  {id:48,name:'政治家秘書',age:35,job:'秘書',cat:'social',trait:'言葉を選ぶ・本音を出さない',mood:50,avatar:'secretary'},
+  {id:49,name:'自治体首長',age:58,job:'市長',cat:'social',trait:'政治的・支持率意識',mood:45,avatar:'mayor'},
+  {id:50,name:'AIコーチ',age:0,job:'AIコーチ',cat:'growth',trait:'客観的・分析的',mood:80,avatar:'ai_coach'},
+];
+
+function getAvatarUrl(seed,cat){
+  var styles={biz:'bottts',family:'avataaars',friend:'lorelei',social:'micah',medical:'personas',growth:'adventurer'};
+  var style=styles[cat]||'lorelei';
+  return'https://api.dicebear.com/7.x/'+style+'/svg?seed='+encodeURIComponent(seed)
+    +'&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf';
+}
+
+function getCatColor(cat){
+  var c={biz:'#3b82f6',family:'#10b981',friend:'#be123c',social:'#7c3aed',medical:'#d97706',growth:'#059669'};
+  return c[cat]||'#3b82f6';
+}
+
+// ── アプリ状態 ──
+const A={
+  user:null,userDoc:null,
+  rooms:[],currentRoom:null,currentRoomData:null,
+  charsAssigned:[],
+  moodMap:{},scoreMap:{},
+  totalScore:0,msgCount:0,
+  msgsUnsub:null,membersUnsub:null,typingUnsub:null,roomsUnsub:null,
+  sending:false,typingTimer:null,
+  selectedCat:null,selectedSit:null,
+  newNums:{m:2,c:2},
+  chatHistory:[],
+};
+
+// ── 画面制御 ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ── 認証 ──
+onAuthStateChanged(auth,async user=>{
+  if(user){
+    A.user=user;
+    const snap=await getDoc(doc(db,'users',user.uid)).catch(()=>null);
+    A.userDoc=snap&&snap.exists()?snap.data():{name:user.displayName||user.email};
+    const nameEl=document.getElementById('home-user');
+    if(nameEl)nameEl.textContent=(A.userDoc.name||user.email)+'さん';
+    showScreen('home-screen');
+    loadRooms();
+    initUI();
+  }else{
+    A.user=null;
+    showScreen('auth-screen');
+  }
+});
+
+window.doLogin=async()=>{
+  const email=document.getElementById('auth-email').value;
+  const pass=document.getElementById('auth-pass').value;
+  const err=document.getElementById('auth-err');
+  try{await signInWithEmailAndPassword(auth,email,pass);}
+  catch(e){err.textContent=e.message;err.style.display='block';}
+};
+window.doGoogleLogin=async()=>{
+  try{await signInWithPopup(auth,gProv);}catch(e){console.error(e);}
+};
+window.showReg=()=>{document.getElementById('reg-form').style.display='block';};
+window.doRegister=async()=>{
+  const name=document.getElementById('reg-name').value;
+  const email=document.getElementById('reg-email').value;
+  const pass=document.getElementById('reg-pass').value;
+  try{
+    const cred=await createUserWithEmailAndPassword(auth,email,pass);
+    await updateProfile(cred.user,{displayName:name});
+    await setDoc(doc(db,'users',cred.user.uid),{name,email,createdAt:serverTimestamp()});
+  }catch(e){alert(e.message);}
+};
+window.doLogout=()=>signOut(auth);
+
+// ── UI初期化 ──
+function initUI(){
+  // カテゴリボタン
+  const catEl=document.getElementById('cat-btns');
+  if(catEl)catEl.innerHTML=CATEGORIES.map(function(c){
+    return '<button class="sel-btn" data-cat="'+c.id+'" onclick="selectCat(this.dataset.cat)">'+c.emoji+' '+c.label+'</button>';
+  }).join('');
+  // シチュエーショングリッド
+  renderSitGrid();
+}
+
+window.selectCat=(cat)=>{
+  A.selectedCat=cat;
+  A.selectedSit=null;
+  document.querySelectorAll('[data-cat]').forEach(b=>{
+    b.classList.toggle('on',b.dataset.cat===cat);
+  });
+  renderSitGrid(cat);
+};
+
+function renderSitGrid(cat){
+  var el=document.getElementById('sit-grid');
+  if(!el)return;
+  var sits=cat?SITUATIONS.filter(function(s){return s.cat===cat;}):SITUATIONS;
+  el.innerHTML=sits.map(function(s){
+    var diff='\u2b50'.repeat(s.difficulty);
+    return'<button class="sit-btn" data-sit="'+s.id+'" onclick="selectSit(this.dataset.sit)">'
+      +s.emoji+' '+s.title+'<br><span style="font-size:.5rem;color:var(--txt3)">'+diff+'</span></button>';
+  }).join('');
+}
+
+window.selectSit=(sid)=>{
+  A.selectedSit=sid;
+  document.querySelectorAll('[data-sit]').forEach(b=>b.classList.toggle('on',b.dataset.sit===sid));
+};
+
+// ── ホームタブ ──
+window.switchTab=(tab,btn)=>{
+  ['rooms','chars','sits','ranking'].forEach(t=>{
+    const el=document.getElementById('ht-'+t);
+    if(el)el.style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('.htab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(tab==='chars')renderCharsTab();
+  if(tab==='sits')renderSitsTab();
+  if(tab==='ranking')loadRanking();
+};
+
+function renderCharsTab(){
+  const el=document.getElementById('ht-chars');
+  if(!el)return;
+  el.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;padding-bottom:1rem">'
+    +CHARACTERS.map(c=>{
+      const col=getCatColor(c.cat);
+      return'<div style="background:var(--surface);border:1px solid '+col+'30;border-radius:12px;padding:.5rem;text-align:center">'
+        +'<img src="'+getAvatarUrl(c.avatar,c.cat)+'" width="44" height="44" style="border-radius:50%;margin-bottom:.2rem;border:2px solid '+col+'40">'
+        +'<div style="font-size:.68rem;font-weight:700;color:var(--txt)">'+c.name+'</div>'
+        +'<div style="font-size:.52rem;color:var(--txt3)">'+c.job+'</div>'
+        +'<div style="font-size:.5rem;color:'+col+'">'+c.trait.slice(0,8)+'</div>'
+        +'<div style="height:3px;background:var(--border);border-radius:2px;margin:.2rem 0;overflow:hidden">'
+        +'<div style="height:100%;width:'+c.mood+'%;background:'+col+';border-radius:2px"></div></div>'
+        +'</div>';
+    }).join('')+'</div>';
+}
+
+function renderSitsTab(){
+  const el=document.getElementById('ht-sits');
+  if(!el)return;
+  el.innerHTML=CATEGORIES.map(cat=>{
+    const sits=SITUATIONS.filter(s=>s.cat===cat.id);
+    return'<div style="margin-bottom:.75rem">'
+      +'<div style="font-size:.62rem;font-weight:700;color:'+cat.color+';letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem">'+cat.emoji+' '+cat.label+'</div>'
+      +sits.map(s=>{
+        const diff='⭐'.repeat(s.difficulty);
+        return'<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.55rem .75rem;margin-bottom:.3rem;display:flex;align-items:center;gap:.5rem">'
+          +'<span style="font-size:1.2rem">'+s.emoji+'</span>'
+          +'<div><div style="font-size:.75rem;font-weight:700;color:var(--txt)">'+s.title+'</div>'
+          +'<div style="font-size:.58rem;color:var(--txt3)">'+s.desc+'</div>'
+          +'<div style="font-size:.55rem;color:'+cat.color+'">'+diff+'</div></div></div>';
+      }).join('')+'</div>';
+  }).join('');
+}
+
+// ── ルーム一覧 ──
+function loadRooms(){
+  if(A.roomsUnsub)A.roomsUnsub();
+  const q=query(collection(db,'life_rooms'),orderBy('lastAt','desc'),limit(30));
+  A.roomsUnsub=onSnapshot(q,snap=>{
+    A.rooms=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderRooms();
+  });
+}
+
+function renderRooms(){
+  var el=document.getElementById('ht-rooms');
+  if(!el)return;
+  if(A.rooms.length===0){
+    el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--txt3);font-size:.72rem">まだルームがありません<br>＋ボタンで作成</div>';
+    return;
+  }
+  el.innerHTML=A.rooms.map(function(r){
+    var isFull=r.memberCount>=(r.maxMembers||4);
+    var modeMap={biz:'💼',family:'🏠',friend:'❤️',social:'🌐',medical:'⚕️',growth:'🌱'};
+    var sit=SITUATIONS.find(function(s){return s.id===r.situationId;})||{emoji:'🌏',title:r.name||'フリー'};
+    var cat=CATEGORIES.find(function(c){return c.id===r.cat;})||{color:'#3b82f6'};
+    var isOwner=A.user&&r.createdBy===A.user.uid;
+    var rid=r.id;
+    var html='<div class="room-card" style="border-color:'+cat.color+'20" data-rid="'+rid+'">';
+    html+='<div class="room-top" onclick="openRoom(this.parentElement.dataset.rid)">';
+    html+='<div class="room-name">'+sit.emoji+' '+(r.name||sit.title)+'</div>';
+    html+='<span class="room-badge '+(isFull?'badge-full':'badge-open')+'">'+(isFull?'満員':'参加可')+'</span>';
+    html+='</div>';
+    html+='<div class="room-meta" onclick="openRoom(this.parentElement.dataset.rid)">';
+    html+=(sit.title||'')+' • 参加 '+(r.memberCount||0)+'/'+(r.maxMembers||4)+'人 • キャラ '+(r.charCount||2)+'人';
+    if(r.lastMessage)html+='<br>最新: '+r.lastMessage.slice(0,25);
+    html+='</div>';
+    if(isOwner){
+      html+='<div style="text-align:right;margin-top:.3rem">';
+      html+='<button onclick="deleteRoom(this.parentElement.parentElement.dataset.rid,event)" ';
+      html+='style="padding:.2rem .5rem;border-radius:var(--r-full);border:1px solid #ef444440;background:#ef444415;color:#ef4444;font-size:.58rem;cursor:pointer">🗑 削除</button>';
+      html+='</div>';
+    }
+    html+='</div>';
+    return html;
+  }).join('');
+}
+
+// ── ルーム作成 ──
+window.openCreateModal=()=>{
+  document.getElementById('create-modal').classList.add('open');
+  initUI();
+};
+window.closeModal=()=>document.getElementById('create-modal').classList.remove('open');
+window.changeN=(key,delta)=>{
+  if(key==='m')A.newNums.m=Math.max(1,Math.min(6,A.newNums.m+delta));
+  else A.newNums.c=Math.max(1,Math.min(8,A.newNums.c+delta));
+  document.getElementById('num-'+key).textContent=A.newNums[key];
+};
+
+window.createRoom=async()=>{
+  if(!A.user)return;
+  const name=document.getElementById('new-room-name').value.trim();
+  if(!name){alert('ルーム名を入力してください');return;}
+  if(!A.selectedSit){alert('シチュエーションを選択してください');return;}
+  const sit=SITUATIONS.find(s=>s.id===A.selectedSit);
+  // キャラをカテゴリ優先でアサイン
+  const pool=A.selectedCat
+    ?[...CHARACTERS.filter(c=>c.cat===A.selectedCat),...CHARACTERS.filter(c=>c.cat!==A.selectedCat)]
+    :CHARACTERS;
+  const assigned=pool.sort(()=>Math.random()-.5).slice(0,A.newNums.c).map(c=>c.id);
+  try{
+    const ref=await addDoc(collection(db,'life_rooms'),{
+      name,situationId:A.selectedSit,cat:sit.cat,
+      maxMembers:A.newNums.m,charCount:A.newNums.c,
+      charsAssigned:assigned,
+      createdBy:A.user.uid,createdAt:serverTimestamp(),
+      lastAt:serverTimestamp(),lastMessage:'',memberCount:1,
+      score:0,
+    });
+    await setDoc(doc(db,'life_rooms',ref.id,'members',A.user.uid),{
+      uid:A.user.uid,
+      name:A.userDoc?.name||A.user.displayName||'プレイヤー',
+      joinedAt:serverTimestamp(),
+    });
+    closeModal();
+    openRoom(ref.id);
+  }catch(e){alert('作成エラー: '+e.message);}
+};
+
+// ── ルーム入室 ──
+window.openRoom=async(roomId)=>{
+  const snap=await getDoc(doc(db,'life_rooms',roomId));
+  if(!snap.exists())return;
+  A.currentRoom={id:roomId,...snap.data()};
+  A.charsAssigned=(A.currentRoom.charsAssigned||[])
+    .map(id=>CHARACTERS.find(c=>c.id===id)).filter(Boolean);
+  A.moodMap={};
+  A.charsAssigned.forEach(c=>{A.moodMap[c.id]=c.mood;});
+  A.totalScore=0;A.msgCount=0;A.chatHistory=[];
+
+  await setDoc(doc(db,'life_rooms',roomId,'members',A.user.uid),{
+    uid:A.user.uid,
+    name:A.userDoc?.name||A.user.displayName||'プレイヤー',
+    joinedAt:serverTimestamp(),
+  });
+  const mSnap=await getDocs(collection(db,'life_rooms',roomId,'members'));
+  await updateDoc(doc(db,'life_rooms',roomId),{memberCount:mSnap.size});
+
+  showScreen('chat-screen');
+  initChat(roomId);
+};
+
+function initChat(roomId){
+  const r=A.currentRoom;
+  const sit=SITUATIONS.find(s=>s.id===r.situationId)||{title:'フリー',emoji:'🌏'};
+  document.getElementById('chat-name').textContent=sit.emoji+' '+(r.name||sit.title);
+  document.getElementById('chat-meta').textContent=sit.title+' • キャラ'+A.charsAssigned.length+'人';
+  updateScoreBar(0);
+  renderCharsBar();
+
+  // メッセージリスナー
+  if(A.msgsUnsub)A.msgsUnsub();
+  document.getElementById('msg-area').innerHTML='';
+  const q=query(collection(db,'life_rooms',roomId,'messages'),orderBy('createdAt','asc'),limit(100));
+  A.msgsUnsub=onSnapshot(q,snap=>{
+    snap.docChanges().forEach(ch=>{
+      if(ch.type==='added')renderMsg({id:ch.doc.id,...ch.doc.data()});
+    });
+  });
+
+  // Typing リスナー
+  if(A.typingUnsub)A.typingUnsub();
+  A.typingUnsub=onSnapshot(collection(db,'life_rooms',roomId,'typing'),snap=>{
+    const bar=document.getElementById('typing-bar');
+    const others=snap.docs.filter(d=>d.id!==A.user.uid&&d.data().text).map(d=>d.data());
+    if(!others.length){bar.innerHTML='';return;}
+    bar.innerHTML=others.map(t=>{
+      const txt=t.text||'';
+      const rem=Math.max(0,20-txt.length);
+      var html='<span class="typing-user">'+t.name+'</span>さん入力中';
+      if(txt.startsWith('なあ'))html+=' — あと<strong>'+rem+'</strong>文字';
+      return html;
+    }).join(' / ');
+  });
+
+  // メンバーリスナー
+  if(A.membersUnsub)A.membersUnsub();
+  A.membersUnsub=onSnapshot(collection(db,'life_rooms',roomId,'members'),snap=>{
+    const members=snap.docs.map(d=>d.data());
+    const bar=document.getElementById('chat-members');
+    const cols=['#3b82f6','#7c3aed','#be123c','#d97706','#10b981','#059669'];
+    bar.innerHTML=members.slice(0,5).map((m,i)=>{
+      const c=cols[i%cols.length];
+      return'<div style="width:26px;height:26px;border-radius:50%;background:'+c+';color:#fff;'
+        +'display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;'
+        +'margin-left:-4px;border:2px solid var(--bg)">'+(m.name||'?')[0]+'</div>';
+    }).join('');
+  });
+
+  // ナレーターによる開幕
+  setTimeout(async()=>{
+    const sit=SITUATIONS.find(s=>s.id===r.situationId)||{title:r.name,desc:''};
+    const chars=A.charsAssigned.map(c=>c.name+'（'+c.job+'）').join('、');
+    const narration=await callAI(
+      'あなたはゲームのナレーターです。シチュエーションの状況説明を50字以内で臨場感たっぷりに描写してください。',
+      'シチュエーション：'+sit.title+'。登場キャラクター：'+chars+' これからのシーンを描写してください。'
+    ).catch(()=>'シチュエーションが始まります...');
+    await addDoc(collection(db,'life_rooms',roomId,'messages'),{
+      uid:'narrator',name:'ナレーター',text:narration,type:'narrator',createdAt:serverTimestamp(),
+    });
+  },800);
+}
+
+function renderCharsBar(){
+  const bar=document.getElementById('chars-bar');
+  bar.innerHTML=A.charsAssigned.map(c=>{
+    const col=getCatColor(c.cat);
+    const mood=A.moodMap[c.id]||c.mood;
+    return'<div class="char-chip" style="border-color:'+col+'30">'
+      +'<img src="'+getAvatarUrl(c.avatar,c.cat)+'" class="char-chip-img" style="border:2px solid '+col+'40">'
+      +'<div class="char-chip-name">'+c.name+'</div>'
+      +'<div class="char-chip-mood">'+getMoodEmoji(mood)+'</div>'
+      +'<div class="mood-bar"><div class="mood-fill" id="mood-'+c.id+'" style="width:'+mood+'%;background:'+col+'"></div></div>'
+      +'</div>';
+  }).join('');
+}
+
+function getMoodEmoji(mood){
+  if(mood>=75)return'😊';if(mood>=55)return'😐';if(mood>=35)return'😒';return'😡';
+}
+
+function updateScoreBar(score){
+  const pct=Math.min(100,Math.max(0,score));
+  document.getElementById('score-fill').style.width=pct+'%';
+  document.getElementById('score-pct').textContent=Math.round(pct)+'%';
+  if(pct>=80&&!A.cleared){
+    A.cleared=true;
+    setTimeout(()=>showClear(pct),500);
+  }
+}
+
+function showClear(score){
+  const overlay=document.getElementById('clear-overlay');
+  document.getElementById('clear-score').textContent=Math.round(score)+'点';
+  const msgs=['素晴らしい交渉力！','見事な対話でした！','プロ級のコミュニケーション！'];
+  document.getElementById('clear-msg').textContent=msgs[Math.floor(Math.random()*msgs.length)];
+  overlay.classList.add('show');
+  // 紙吹雪
+  launchConfetti();
+}
+window.closeClear=()=>document.getElementById('clear-overlay').classList.remove('show');
+
+function launchConfetti(){
+  const colors=['#3b82f6','#7c3aed','#be123c','#d97706','#10b981','#f59e0b'];
+  for(let i=0;i<30;i++){
+    const el=document.createElement('div');
+    el.style.cssText='position:fixed;width:8px;height:8px;border-radius:50%;z-index:250;pointer-events:none;'
+      +'background:'+colors[i%colors.length]+';'
+      +'left:'+Math.random()*100+'vw;top:-10px;'
+      +'animation:fall '+( 1+Math.random()*2)+'s linear '+(Math.random()*.5)+'s forwards;';
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),3000);
+  }
+  // keyframes
+  if(!document.getElementById('fall-style')){
+    const s=document.createElement('style');
+    s.id='fall-style';
+    s.textContent='@keyframes fall{from{transform:translateY(-10px) rotate(0deg);opacity:1;}to{transform:translateY(100vh) rotate(720deg);opacity:0;}}';
+    document.head.appendChild(s);
+  }
+}
+
+// ── メッセージ表示 ──
+function renderMsg(d){
+  const area=document.getElementById('msg-area');
+  if(!area)return;
+  const isMe=d.uid===A.user?.uid;
+  const isChar=d.type==='char';
+  const isNarrator=d.type==='narrator';
+  const isCoach=d.type==='coach';
+  const isSystem=d.type==='system';
+  const row=document.createElement('div');
+  const safe=escHtml(d.text||'');
+
+  if(isNarrator){
+    row.className='msg-row narrator';
+    row.innerHTML='<div class="bubble bubble-narrator">📖 '+safe+'</div>';
+  }else if(isSystem){
+    row.className='msg-row system';
+    row.innerHTML='<div class="bubble bubble-system">'+safe+'</div>';
+  }else if(isCoach){
+    row.className='msg-row system';
+    row.innerHTML='<div class="bubble bubble-coach">⚡ AIコーチ: '+safe+'</div>';
+  }else if(isChar){
+    const ch=A.charsAssigned.find(c=>c.name===d.charName)||{cat:'biz',avatar:d.charName||'default'};
+    const col=getCatColor(ch.cat);
+    row.className='msg-row char';
+    row.innerHTML='<div class="char-avatar" style="border:2px solid '+col+'40">'
+      +'<img src="'+getAvatarUrl(ch.avatar,ch.cat)+'" width="36" height="36" style="border-radius:50%">'
+      +'<div class="mouth talking" id="mouth-'+d.id+'"></div></div>'
+      +'<div class="msg-content">'
+      +'<div class="msg-name" style="color:'+col+'">'+( d.charName||'キャラ')+'</div>'
+      +'<div class="bubble bubble-char">'+safe+'</div>'
+      +'<div class="msg-time">'+fmtTime(d.createdAt)+'</div></div>';
+    setTimeout(()=>{
+      const m=document.getElementById('mouth-'+d.id);
+      if(m)m.classList.remove('talking');
+    },1800);
+  }else if(isMe){
+    row.className='msg-row me';
+    const scoreHtml=d.score!==undefined
+      ?'<span class="score-badge" style="background:var(--teal)20;color:var(--teal)">+'+d.score+'pt</span>':'' ;
+    row.innerHTML='<div class="msg-content">'
+      +'<div class="bubble bubble-me">'+safe+scoreHtml+'</div>'
+      +'<div class="msg-time" style="text-align:right">'+fmtTime(d.createdAt)+'</div></div>';
+  }else{
+    const mc=['#3b82f6','#7c3aed','#be123c','#d97706','#10b981'];
+    const ci=d.uid?.charCodeAt(0)%5||0;
+    row.className='msg-row char';
+    row.innerHTML='<div style="width:28px;height:28px;border-radius:50%;background:'+mc[ci]+';color:#fff;'
+      +'display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">'
+      +(d.name||'?')[0]+'</div>'
+      +'<div class="msg-content"><div class="msg-name">'+( d.name||'メンバー')+'</div>'
+      +'<div class="bubble bubble-member">'+safe+'</div>'
+      +'<div class="msg-time">'+fmtTime(d.createdAt)+'</div></div>';
+  }
+  area.appendChild(row);
+  area.scrollTop=area.scrollHeight;
+}
+
+function escHtml(s){
+  return s.split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('\n').join('<br>');
+}
+function fmtTime(ts){
+  if(!ts)return'';
+  const d=ts.toDate?ts.toDate():new Date();
+  return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+}
+
+// ── なあシステム ──
+window.onInp=async(el)=>{
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,100)+'px';
+  document.getElementById('send-btn').disabled=el.value.trim()==='';
+  if(!A.currentRoom||!A.user)return;
+  clearTimeout(A.typingTimer);
+  await setDoc(doc(db,'life_rooms',A.currentRoom.id,'typing',A.user.uid),{
+    uid:A.user.uid,name:A.userDoc?.name||'?',text:el.value,ts:serverTimestamp(),
+  }).catch(()=>{});
+  A.typingTimer=setTimeout(async()=>{
+    await deleteDoc(doc(db,'life_rooms',A.currentRoom.id,'typing',A.user.uid)).catch(()=>{});
+  },3000);
+};
+
+// ── 送信 ──
+window.sendMsg=async()=>{
+  if(A.sending||!A.currentRoom||!A.user)return;
+  const inp=document.getElementById('chat-inp');
+  const text=inp.value.trim();
+  if(!text)return;
+  A.sending=true;
+  document.getElementById('send-btn').disabled=true;
+  inp.value='';inp.style.height='auto';
+  clearTimeout(A.typingTimer);
+  await deleteDoc(doc(db,'life_rooms',A.currentRoom.id,'typing',A.user.uid)).catch(()=>{});
+
+  try{
+    const roomId=A.currentRoom.id;
+    const r=A.currentRoom;
+    const sit=SITUATIONS.find(s=>s.id===r.situationId)||{title:'フリー',desc:''};
+    A.msgCount++;
+
+    // スコア計算（AIが評価）
+    let score=0;
+    const char=A.charsAssigned[Math.floor(A.msgCount%A.charsAssigned.length)];
+    const prevMood=A.moodMap[char?.id]||50;
+
+    // ユーザーメッセージ保存
+    const msgRef=await addDoc(collection(db,'life_rooms',roomId,'messages'),{
+      uid:A.user.uid,
+      name:A.userDoc?.name||A.user.displayName||'プレイヤー',
+      text,type:'user',score:0,createdAt:serverTimestamp(),
+    });
+
+    await updateDoc(doc(db,'life_rooms',roomId),{
+      lastMessage:text.slice(0,30),lastAt:serverTimestamp(),
+    });
+
+    // キャラAIが返答
+    if(char){
+      const charSystem='あなたは'+char.name+'（'+char.age+'歳、'+char.job+'）というキャラクターです。'
+        +'性格：'+char.trait+'。'
+        +'現在の機嫌スコア：'+prevMood+'/100（低いほど不機嫌）。'
+        +'シチュエーション：'+sit.title+'（'+sit.desc+'）。'
+        +'このキャラクターとして自然にリアルに返答してください。80字以内で。'
+        +'返答後に【評価:このアプローチを0〜10点で採点し20字で理由を】と【機嫌変化:+5または-3のように数値だけ】を必ず付けてください。';
+
+      const history=A.chatHistory.slice(-6).map(m=>m.role+': '+m.content).join('\n');
+      const reply=await callAI(charSystem,history+'\nプレイヤー: '+text,500).catch(()=>'...');
+
+      // 評価を解析
+      const scoreMatch=reply.match(/【評価:(\d+)/);
+      const moodMatch=reply.match(/【機嫌変化:([+-]?\d+)/);
+      score=scoreMatch?parseInt(scoreMatch[1]):5;
+      const moodDelta=moodMatch?parseInt(moodMatch[1]):0;
+
+      var charReply=reply;
+      charReply=charReply.split('【評価:').map(function(p,i){return i===0?p:p.split('】').slice(1).join('】');}).join('');
+      charReply=charReply.split('【機嫌変化:').map(function(p,i){return i===0?p:p.split('】').slice(1).join('】');}).join('').trim();
+
+      // 機嫌更新
+      A.moodMap[char.id]=Math.max(0,Math.min(100,(A.moodMap[char.id]||50)+moodDelta));
+      const moodEl=document.getElementById('mood-'+char.id);
+      if(moodEl)moodEl.style.width=A.moodMap[char.id]+'%';
+
+      await addDoc(collection(db,'life_rooms',roomId,'messages'),{
+        uid:'char_'+char.id,name:char.name,charName:char.name,
+        text:charReply,type:'char',createdAt:serverTimestamp(),
+      });
+
+      // スコア更新
+      A.totalScore=Math.min(100,A.totalScore+(score-5)*2);
+      updateScoreBar(A.totalScore);
+
+      // スコアをメッセージに反映
+      await updateDoc(doc(db,'life_rooms',roomId,'messages',msgRef.id),{score});
+
+      // AIコーチ（3回に1回）
+      if(A.msgCount%3===0){
+        const coachReply=await callAI(
+          'あなたはコミュニケーションコーチです。直前のやりとりを見てプレイヤーへの改善アドバイスを30字以内で。',
+          'シチュエーション:'+sit.title+'\nプレイヤー:'+text+'\n'+char.name+':'+charReply
+        ).catch(()=>'');
+        if(coachReply){
+          await addDoc(collection(db,'life_rooms',roomId,'messages'),{
+            uid:'coach',name:'AIコーチ',text:coachReply,type:'coach',createdAt:serverTimestamp(),
+          });
+        }
+      }
+      A.chatHistory.push({role:'player',content:text});
+      A.chatHistory.push({role:char.name,content:charReply});
+      if(A.chatHistory.length>20)A.chatHistory=A.chatHistory.slice(-16);
+    }
+  }catch(e){console.error(e);}
+  A.sending=false;
+  document.getElementById('send-btn').disabled=false;
+};
+
+// ── ルーム退出 ──
+window.leaveRoom=async()=>{
+  if(A.msgsUnsub)A.msgsUnsub();
+  if(A.membersUnsub)A.membersUnsub();
+  if(A.typingUnsub)A.typingUnsub();
+  A.cleared=false;
+  if(A.currentRoom&&A.user){
+    await deleteDoc(doc(db,'life_rooms',A.currentRoom.id,'typing',A.user.uid)).catch(()=>{});
+  }
+  A.currentRoom=null;
+  A.charsAssigned=[];
+  showScreen('home-screen');
+};
+
+// ── ルーム削除 ──
+window.deleteRoom=async(roomId,event)=>{
+  event.stopPropagation();
+  if(!confirm('このルームを削除しますか？'))return;
+  try{
+    const cols=['messages','members','typing'];
+    for(const col of cols){
+      const snap=await getDocs(collection(db,'life_rooms',roomId,col));
+      for(const d of snap.docs)await deleteDoc(doc(db,'life_rooms',roomId,col,d.id));
+    }
+    await deleteDoc(doc(db,'life_rooms',roomId));
+    A.rooms=A.rooms.filter(r=>r.id!==roomId);
+    renderRooms();
+  }catch(e){alert('削除エラー: '+e.message);}
+};
+
+// ── ランキング ──
+async function loadRanking(){
+  const el=document.getElementById('ht-ranking');
+  if(!el)return;
+  el.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.7rem">読み込み中...</div>';
+  try{
+    const snap=await getDocs(query(collection(db,'life_rankings'),orderBy('score','desc'),limit(20)));
+    if(snap.empty){
+      el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--txt3);font-size:.72rem">まだランキングデータがありません</div>';
+      return;
+    }
+    const medals=['🥇','🥈','🥉'];
+    el.innerHTML=snap.docs.map((d,i)=>{
+      const r=d.data();
+      const sit=SITUATIONS.find(s=>s.id===r.sitId)||{title:'フリー',emoji:'🌏'};
+      return'<div class="rank-card">'
+        +'<div class="rank-num">'+(medals[i]||i+1)+'</div>'
+        +'<div class="rank-info"><div class="rank-name">'+(r.name||'プレイヤー')+'</div>'
+        +'<div class="rank-meta">'+sit.emoji+' '+sit.title+' • '+fmtDate(r.createdAt)+'</div></div>'
+        +'<div class="rank-score">'+r.score+'点</div></div>';
+    }).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--rose);padding:1rem">'+e.message+'</div>';}
+}
+function fmtDate(ts){
+  if(!ts)return'';
+  const d=ts.toDate?ts.toDate():new Date();
+  return(d.getMonth()+1)+'/'+d.getDate();
+}
+
+// スプラッシュ
+setTimeout(()=>{if(!A.user)showScreen('auth-screen');},1800);
+</script>
+</body>
+</html>
